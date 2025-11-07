@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     console.log(`Generating report for ${resultIds.length} test results...`)
 
     // Fetch test results from database with all related data
-    const testResults = await prisma.testResult.findMany({
+    const fetchedResults = await prisma.testResult.findMany({
       where: {
         id: { in: resultIds },
       },
@@ -46,17 +46,20 @@ export async function POST(request: NextRequest) {
           },
         },
       },
-      orderBy: {
-        executedAt: 'asc',
-      },
     })
 
-    if (testResults.length === 0) {
+    if (fetchedResults.length === 0) {
       return NextResponse.json(
         { error: 'No test results found for the provided IDs' },
         { status: 404 }
       )
     }
+
+    // Sort results to match the order of resultIds (preserves drag-and-drop order from UI)
+    const resultMap = new Map(fetchedResults.map(r => [r.id, r]))
+    const testResults = resultIds
+      .map(id => resultMap.get(id))
+      .filter((r): r is NonNullable<typeof r> => r !== undefined)
 
     // Get environment details from first test
     const environmentName = testResults[0].test.environment.name
