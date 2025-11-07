@@ -19,7 +19,8 @@ A local web application for testing and validating Salesforce API endpoints acro
 - **Database**: SQLite (local) / PostgreSQL (cloud)
 - **ORM**: Prisma
 - **UI**: Tailwind CSS + Shadcn/ui
-- **PDF Generation**: Puppeteer
+- **PDF Generation**: PDFKit
+- **File Storage**: Vercel Blob Storage (cloud) / Local filesystem (dev)
 - **HTTP Client**: Axios
 - **Validation**: Zod
 
@@ -167,14 +168,44 @@ npm run db:studio
 
 ## Cloud Deployment
 
-### Vercel (Recommended)
+### Vercel (Recommended for Next.js)
 
-1. Push your code to GitHub
-2. Import project in Vercel
-3. Add environment variables:
-   - `DATABASE_URL`: PostgreSQL connection string (use Vercel Postgres)
-   - `ENCRYPTION_KEY`: Secure random string
-4. Deploy!
+This application is optimized for Vercel deployment with Vercel Blob Storage for PDF reports.
+
+**Prerequisites:**
+- GitHub account with your code pushed
+- Vercel account (free tier works!)
+
+**Steps:**
+
+1. **Create Vercel Postgres Database**
+   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
+   - Navigate to Storage → Create Database → Postgres
+   - Note the connection string
+
+2. **Create Vercel Blob Storage**
+   - Go to Storage → Create Store → Blob
+   - Copy the `BLOB_READ_WRITE_TOKEN`
+
+3. **Import Project to Vercel**
+   - Click "Add New Project"
+   - Import from your GitHub repository
+   - Vercel will auto-detect Next.js
+
+4. **Configure Environment Variables**
+   Add these in Project Settings → Environment Variables:
+   ```
+   DATABASE_URL=postgres://... (from Vercel Postgres)
+   ENCRYPTION_KEY=<generate with: openssl rand -hex 32>
+   BLOB_READ_WRITE_TOKEN=vercel_blob_rw_... (from Vercel Blob)
+   ```
+
+5. **Deploy**
+   - Click "Deploy"
+   - Vercel will build and deploy automatically
+   - Visit your deployed URL!
+
+**Note:** PDF reports are stored in Vercel Blob Storage (not filesystem). The app automatically uploads generated PDFs to Blob Storage.
 
 ### Azure Web App
 

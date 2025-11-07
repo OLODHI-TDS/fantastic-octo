@@ -111,7 +111,7 @@ model TestReport {
   failedTests    Int
   errorTests     Int
   avgResponseTime Int?    // Average response time across all tests
-  pdfPath        String   // Path to generated PDF file
+  pdfPath        String   // URL to generated PDF file (Vercel Blob Storage)
   generatedAt    DateTime @default(now())
   generatedBy    String?  // Future: user identifier
 }

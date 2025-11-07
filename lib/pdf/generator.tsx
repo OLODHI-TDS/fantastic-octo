@@ -1,6 +1,5 @@
-import path from 'path'
-import fs from 'fs'
 import PDFDocument from 'pdfkit'
+import { put } from '@vercel/blob'
 
 export interface TestResultData {
   id: string
@@ -69,16 +68,9 @@ export async function generateTestReportPDF(
       instanceUrl,
     } = options
 
-    // Ensure reports directory exists
-    const reportsDir = path.join(process.cwd(), 'public', 'reports')
-    if (!fs.existsSync(reportsDir)) {
-      fs.mkdirSync(reportsDir, { recursive: true })
-    }
-
     // Generate unique filename
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
     const fileName = `test-report-${timestamp}.pdf`
-    const filePath = path.join(reportsDir, fileName)
 
     // Prepare report data
     const reportData: ReportData = {
@@ -132,13 +124,18 @@ export async function generateTestReportPDF(
       generatedAt: reportData.generatedAt.toISOString(),
     })
 
-    await new Promise<void>((resolve, reject) => {
+    // Generate PDF in memory
+    const pdfBuffer = await new Promise<Buffer>((resolve, reject) => {
       try {
-        // Create PDF document
         const doc = new PDFDocument({ size: 'A4', margin: 50 })
-        const writeStream = fs.createWriteStream(filePath)
+        const buffers: Buffer[] = []
 
-        doc.pipe(writeStream)
+        doc.on('data', buffers.push.bind(buffers))
+        doc.on('end', () => {
+          const pdfData = Buffer.concat(buffers)
+          resolve(pdfData)
+        })
+        doc.on('error', reject)
 
         // Calculate statistics using effective status (manualStatus if set, otherwise status)
         const totalTests = reportData.tests.length
@@ -282,28 +279,26 @@ export async function generateTestReportPDF(
         }
 
         doc.end()
-
-        writeStream.on('finish', () => {
-          console.log('PDF written successfully to:', filePath)
-          resolve()
-        })
-
-        writeStream.on('error', (error) => {
-          console.error('Error writing PDF:', error)
-          reject(error)
-        })
       } catch (error: any) {
         console.error('Error creating PDF:', error)
         reject(error)
       }
     })
 
-    // Return relative path (from public folder)
-    const relativePath = `/reports/${fileName}`
+    console.log('PDF buffer created, size:', pdfBuffer.length, 'bytes')
+
+    // Upload to Vercel Blob Storage
+    console.log('Uploading PDF to Vercel Blob Storage...')
+    const blob = await put(fileName, pdfBuffer, {
+      access: 'public',
+      contentType: 'application/pdf',
+    })
+
+    console.log('PDF uploaded successfully to:', blob.url)
 
     return {
       success: true,
-      pdfPath: relativePath,
+      pdfPath: blob.url,
       fileName,
     }
   } catch (error: any) {
