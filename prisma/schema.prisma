@@ -1,0 +1,117 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Salesforce Environment configuration
+model Environment {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  type        String       // "production", "sandbox", "scratch"
+  instanceUrl String       // Salesforce instance URL
+  description String?      // Optional description
+  active      Boolean      @default(true)
+
+  // Verification credentials for standard REST API queries (used to verify test results)
+  verificationEnabled     Boolean  @default(false)
+  verificationBearerToken String?  // Encrypted Bearer token for standard Salesforce REST API
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  credentials Credential[]
+  tests       Test[]
+}
+
+// Credentials for authenticating with Salesforce
+model Credential {
+  id            String       @id @default(cuid())
+  authType      String       // "apikey" or "oauth2"
+  orgName       String       // Organization name
+  regionScheme  String       @default("EW - Custodial") // Region & Scheme: "EW - Custodial", "EW - Insured", "NI - Custodial", "NI - Insured", "SDS - Custodial"
+  memberId      String       // Member ID
+  branchId      String       // Branch ID
+  apiKey        String?      // Encrypted API key (for apikey auth)
+  clientId      String?      // Connected app client ID (for oauth2 auth)
+  clientSecret  String?      // Encrypted client secret (for oauth2 auth)
+  description   String?      // Optional description
+  active        Boolean      @default(true)
+  environmentId String
+  environment   Environment  @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  tests         Test[]
+  results       TestResult[]
+}
+
+// API Test configuration
+model Test {
+  id             String     @id @default(cuid())
+  name           String
+  description    String?
+  endpoint       String     // API endpoint path
+  method         String     // GET, POST, PUT, DELETE, PATCH
+  headers        String?    // JSON string of custom headers
+  body           String?    // JSON string of request body
+  expectedStatus Int        @default(200)
+  validations    String?    // JSON string of validation rules
+  useAliasUrl    Boolean    @default(false) // Use legacy-style alias URL
+  environmentId  String
+  environment    Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  credentialId   String
+  credential     Credential  @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  results        TestResult[]
+}
+
+// Test execution result
+model TestResult {
+  id                String     @id @default(cuid())
+  testId            String
+  test              Test       @relation(fields: [testId], references: [id], onDelete: Cascade)
+  credentialId      String
+  credential        Credential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  status            String     // "passed", "failed", "error" - actual execution status
+  manualStatus      String?    // Manual override: "passed", "failed", "error" - for negative tests
+  responseTime      Int        // milliseconds
+  statusCode        Int
+  request           String     // JSON string of full request details
+  response          String     // JSON string of full response
+  validationResults String?    // JSON string of validation outcomes
+  error             String?    // Error message if failed
+  notes             String?    // User notes/context about this test result
+
+  // Verification results (queries to Salesforce to verify changes)
+  verificationResults String?  // JSON string of verification checks performed
+  verificationPassed  Boolean? // Overall verification status
+  verificationError   String?  // Error if verification failed
+
+  executedAt        DateTime   @default(now())
+  pdfPath           String?    // Path to generated PDF report (deprecated - use TestReport)
+}
+
+// Generated test evidence reports (groups multiple test results)
+model TestReport {
+  id             String   @id @default(cuid())
+  title          String
+  description    String?
+  groupingType   String   // "endpoint", "date_range", "manual", "status", "scenario"
+  groupingValue  String?  // Additional context (e.g., endpoint name, date range)
+  resultIds      String   // JSON array of TestResult IDs included in report
+  totalTests     Int
+  passedTests    Int
+  failedTests    Int
+  errorTests     Int
+  avgResponseTime Int?    // Average response time across all tests
+  pdfPath        String   // Path to generated PDF file
+  generatedAt    DateTime @default(now())
+  generatedBy    String?  // Future: user identifier
+}

@@ -1,0 +1,326 @@
+[
+  {
+    "testName": "Missing user_tenancy_reference",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Missing required parameter:user_tenancy_reference"
+      ]
+    }
+  },
+  {
+    "testName": "Missing deposit_reference",
+    "description": "",
+    "status": "PASS",
+    "statusCode": 201,
+    "errorMessage": "Request succeeded (unexpected for negative test)"
+  },
+  {
+    "testName": "Missing property_id",
+    "description": "",
+    "status": "PASS",
+    "statusCode": 201,
+    "errorMessage": "Request succeeded (unexpected for negative test)"
+  },
+  {
+    "testName": "Missing deposit_amount",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Missing required parameter:deposit_amount"
+      ]
+    }
+  },
+  {
+    "testName": "Missing tenancy_start_date",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Missing required parameter:tenancy_start_date"
+      ]
+    }
+  },
+  {
+    "testName": "Empty people array",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Invalid payload.",
+        "Invalid value for tenancy.number_of_landlords",
+        "Invalid value for tenancy.number_of_tenants"
+      ]
+    }
+  },
+  {
+    "testName": "No tenants in people array",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Missing required entity : tenant",
+        "Invalid value for tenancy.number_of_tenants"
+      ]
+    }
+  },
+  {
+    "testName": "No landlords in people array",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "You must send a primary landlord",
+        "Missing required entity : Landlord",
+        "Invalid value for tenancy.number_of_landlords"
+      ]
+    }
+  },
+  {
+    "testName": "number_of_tenants count mismatch",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Invalid value for tenancy.number_of_tenants"
+      ]
+    }
+  },
+  {
+    "testName": "number_of_landlords count mismatch",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Invalid value for tenancy.number_of_landlords"
+      ]
+    }
+  },
+  {
+    "testName": "Invalid date format (YYYY-MM-DD)",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Invalid value '2026-02-10' for tenancy.tenancy_start_date"
+      ]
+    }
+  },
+  {
+    "testName": "End date before start date",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "tenancy_start_date can not be greater than tenancy_expected_end_date"
+      ]
+    }
+  },
+  {
+    "testName": "deposit_received_date in future",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "deposit_received_date can not be in future",
+        "deposit_received_date can not be greater than tenancy_expected_end_date"
+      ]
+    }
+  },
+  {
+    "testName": "Invalid postcode area (SW)",
+    "description": "",
+    "status": "PASS",
+    "statusCode": 201,
+    "errorMessage": "Request succeeded (unexpected for negative test)"
+  },
+  {
+    "testName": "Invalid furnished_status value",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Invalid value 'yes' for tenancy.furnished_status"
+      ]
+    }
+  },
+  {
+    "testName": "Negative deposit amount",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Invalid value '-100' for tenancy.deposit_amount"
+      ]
+    }
+  },
+  {
+    "testName": "deposit_amount_to_protect > deposit_amount",
+    "description": "",
+    "status": "PASS",
+    "statusCode": 201,
+    "errorMessage": "Request succeeded (unexpected for negative test)"
+  },
+  {
+    "testName": "Invalid email format",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 409,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Invalid person_email for tenant"
+      ]
+    }
+  },
+  {
+    "testName": "Invalid phone number (too short)",
+    "description": "",
+    "status": "PASS",
+    "statusCode": 201,
+    "errorMessage": "Request succeeded (unexpected for negative test)"
+  },
+  {
+    "testName": "Invalid mobile number prefix",
+    "description": "",
+    "status": "PASS",
+    "statusCode": 201,
+    "errorMessage": "Request succeeded (unexpected for negative test)"
+  },
+  {
+    "testName": "is_business TRUE without business_name",
+    "description": "",
+    "status": "PASS",
+    "statusCode": 201,
+    "errorMessage": "Request succeeded (unexpected for negative test)"
+  },
+  {
+    "testName": "is_business FALSE with business_name",
+    "description": "",
+    "status": "PASS",
+    "statusCode": 201,
+    "errorMessage": "Request succeeded (unexpected for negative test)"
+  },
+  {
+    "testName": "Missing person_firstname",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Missing required parameter:person_firstname",
+        "Missing required parameter:person_surname",
+        "Missing required parameter:person_firstname"
+      ]
+    }
+  },
+  {
+    "testName": "Missing person_surname",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Missing required parameter:person_surname"
+      ]
+    }
+  },
+  {
+    "testName": "Missing person_email",
+    "description": "",
+    "status": "PASS",
+    "statusCode": 201,
+    "errorMessage": "Request succeeded (unexpected for negative test)"
+  },
+  {
+    "testName": "Duplicate user_tenancy_reference",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 409,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Duplicate User Tenancy Reference found for this member"
+      ]
+    }
+  },
+  {
+    "testName": "Very long property_street (500 chars)",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Invalid value 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' for tenancy.property_street"
+      ]
+    }
+  },
+  {
+    "testName": "Zero deposit amount",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Invalid value 0.0 for tenancy.deposit_amount",
+        "Invalid value 0.0 for tenancy.deposit_amount_to_protect"
+      ]
+    }
+  },
+  {
+    "testName": "Missing property_postcode",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Missing required parameter:property_postcode"
+      ]
+    }
+  },
+  {
+    "testName": "Non-numeric deposit_amount",
+    "description": "",
+    "status": "FAIL",
+    "statusCode": 400,
+    "errorMessage": "Unknown error",
+    "errorDetails": {
+      "failure": [
+        "Invalid value 'abc' for tenancy.deposit_amount"
+      ]
+    }
+  }
+]
