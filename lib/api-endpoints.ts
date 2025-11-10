@@ -244,6 +244,18 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     pathParamPlaceholder: 'EWI01261682',
     expectedStatus: 200,
   },
+  {
+    id: 'remove-from-cart',
+    name: 'Remove from Cart (NRLA)',
+    description: 'Remove a deposit from the NRLA cart',
+    endpoint: '/services/apexrest/nrla/cart/remove/{DAN}',
+    method: 'GET',
+    category: 'Cart Management',
+    requiresPathParam: true,
+    pathParamName: 'DAN',
+    pathParamPlaceholder: 'EWI01261682',
+    expectedStatus: 200,
+  },
 ]
 
 export const API_CATEGORIES = [
