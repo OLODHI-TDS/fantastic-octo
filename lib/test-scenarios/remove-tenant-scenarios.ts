@@ -20,60 +20,107 @@ export interface TestScenario {
 export const removeTenantScenarios: TestScenario[] = [
   // POSITIVE TESTS
   {
-    id: 'positive-remove-tenant',
-    name: 'Positive: Remove Existing Tenant',
-    description: 'Remove a valid tenant from an existing deposit',
+    id: 'positive-remove-single-tenant',
+    name: 'Positive: Remove Single Tenant',
+    description: 'Remove one tenant from an existing deposit',
     type: 'positive',
     expectedStatus: 200,
-    generatePayload: () => generateRemoveTenantData(),
+    generatePayload: () => {
+      const data = generateRemoveTenantData()
+      // Ensure only 1 tenant
+      data.people = data.people.slice(0, 1)
+      return data
+    },
     // Note: Requires a valid DAN and person_id from an existing deposit
   },
 
   {
+    id: 'positive-remove-multiple-tenants',
+    name: 'Positive: Remove Multiple Tenants',
+    description: 'Remove multiple tenants from an existing deposit',
+    type: 'positive',
+    expectedStatus: 200,
+    generatePayload: () => generateRemoveTenantData(),
+  },
+
+  {
     id: 'positive-delete-flag-true',
-    name: 'Positive: Delete Flag Set to True',
-    description: 'Remove tenant with delete flag explicitly set to "true"',
+    name: 'Positive: Delete Flag Explicitly True',
+    description: 'Remove tenant with delete flag explicitly set to true (boolean)',
     type: 'positive',
     expectedStatus: 200,
     generatePayload: () => ({
-      ...generateRemoveTenantData(),
-      delete: 'true'
+      people: [
+        {
+          person_id: 'TENABCD1234',
+          delete: true
+        }
+      ]
     }),
   },
 
   // NEGATIVE TESTS - Missing Required Fields
   {
+    id: 'negative-missing-people-array',
+    name: 'Negative: Missing people Array',
+    description: 'Request body missing the people array',
+    type: 'negative',
+    expectedStatus: 400,
+    generatePayload: () => ({}),
+  },
+
+  {
+    id: 'negative-empty-people-array',
+    name: 'Negative: Empty people Array',
+    description: 'People array is empty',
+    type: 'negative',
+    expectedStatus: 400,
+    generatePayload: () => ({ people: [] }),
+  },
+
+  {
     id: 'negative-missing-person-id',
     name: 'Negative: Missing person_id',
-    description: 'Request body missing the required person_id field',
+    description: 'Person object missing the required person_id field',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      delete: 'true'
+      people: [
+        {
+          delete: true
+        }
+      ]
     }),
   },
 
   {
     id: 'negative-missing-delete-flag',
     name: 'Negative: Missing delete Flag',
-    description: 'Request body missing the delete flag',
+    description: 'Person object missing the delete flag',
     type: 'negative',
     expectedStatus: 400,
-    generatePayload: () => {
-      const { delete: _, ...data } = generateRemoveTenantData()
-      return data
-    },
+    generatePayload: () => ({
+      people: [
+        {
+          person_id: 'TENABCD1234'
+        }
+      ]
+    }),
   },
 
   {
     id: 'negative-empty-person-id',
     name: 'Negative: Empty person_id',
-    description: 'person_id field is empty',
+    description: 'person_id field is empty string',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      person_id: '',
-      delete: 'true'
+      people: [
+        {
+          person_id: '',
+          delete: true
+        }
+      ]
     }),
   },
 
@@ -84,8 +131,12 @@ export const removeTenantScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      person_id: null,
-      delete: 'true'
+      people: [
+        {
+          person_id: null,
+          delete: true
+        }
+      ]
     }),
   },
 
@@ -139,8 +190,12 @@ export const removeTenantScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 404,
     generatePayload: () => ({
-      person_id: 'NONEXISTENT123',
-      delete: 'true'
+      people: [
+        {
+          person_id: 'NONEXISTENT123',
+          delete: true
+        }
+      ]
     }),
     // Note: Using a person_id that doesn't belong to the deposit
   },
@@ -152,8 +207,12 @@ export const removeTenantScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      person_id: 'INVALID@#$%',
-      delete: 'true'
+      people: [
+        {
+          person_id: 'INVALID@#$%',
+          delete: true
+        }
+      ]
     }),
   },
 
@@ -164,8 +223,12 @@ export const removeTenantScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      person_id: '12345678',
-      delete: 'true'
+      people: [
+        {
+          person_id: '12345678',
+          delete: true
+        }
+      ]
     }),
   },
 
@@ -173,37 +236,49 @@ export const removeTenantScenarios: TestScenario[] = [
   {
     id: 'negative-delete-flag-false',
     name: 'Negative: Delete Flag Set to False',
-    description: 'Attempt to remove tenant with delete flag set to "false"',
+    description: 'Attempt to remove tenant with delete flag set to false',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      ...generateRemoveTenantData(),
-      delete: 'false'
+      people: [
+        {
+          person_id: 'TENABCD1234',
+          delete: false
+        }
+      ]
     }),
-    // Note: API might require delete to be "true" for removal
+    // Note: API might require delete to be true for removal
   },
 
   {
-    id: 'negative-delete-flag-invalid',
-    name: 'Negative: Invalid Delete Flag Value',
-    description: 'Attempt to remove tenant with invalid delete flag value',
+    id: 'negative-delete-flag-string',
+    name: 'Negative: Delete Flag as String',
+    description: 'Attempt to remove tenant with delete flag as string "true" instead of boolean',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      ...generateRemoveTenantData(),
-      delete: 'invalid'
+      people: [
+        {
+          person_id: 'TENABCD1234',
+          delete: 'true'
+        }
+      ]
     }),
   },
 
   {
     id: 'negative-delete-flag-numeric',
     name: 'Negative: Numeric Delete Flag',
-    description: 'Attempt to remove tenant with numeric delete flag (1 instead of "true")',
+    description: 'Attempt to remove tenant with numeric delete flag (1 instead of true)',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      ...generateRemoveTenantData(),
-      delete: 1
+      people: [
+        {
+          person_id: 'TENABCD1234',
+          delete: 1
+        }
+      ]
     }),
   },
 
@@ -226,8 +301,12 @@ export const removeTenantScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      person_id: 'LLABCD1234',  // Landlord person_id
-      delete: 'true'
+      people: [
+        {
+          person_id: 'LLABCD1234',  // Landlord person_id
+          delete: true
+        }
+      ]
     }),
     // Note: This endpoint should only remove tenants, not landlords
   },
@@ -250,8 +329,12 @@ export const removeTenantScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      person_id: "TEN123' OR '1'='1",
-      delete: 'true'
+      people: [
+        {
+          person_id: "TEN123' OR '1'='1",
+          delete: true
+        }
+      ]
     }),
   },
 
@@ -262,8 +345,12 @@ export const removeTenantScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      person_id: '<script>alert("xss")</script>',
-      delete: 'true'
+      people: [
+        {
+          person_id: '<script>alert("xss")</script>',
+          delete: true
+        }
+      ]
     }),
   },
 ]

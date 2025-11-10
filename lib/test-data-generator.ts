@@ -295,9 +295,19 @@ export function generateAddAdditionalTenantData() {
 }
 
 export function generateRemoveTenantData() {
+  const numTenants = faker.number.int({ min: 1, max: 2 })
+  const people = []
+
+  // Generate tenant(s) to remove
+  for (let i = 0; i < numTenants; i++) {
+    people.push({
+      person_id: `TEN${faker.string.alphanumeric(8).toUpperCase()}`,
+      delete: true
+    })
+  }
+
   return {
-    person_id: `TEN${faker.string.alphanumeric(8).toUpperCase()}`,
-    delete: 'true'
+    people
   }
 }
 
