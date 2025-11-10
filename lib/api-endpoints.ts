@@ -220,6 +220,18 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     pathParamPlaceholder: 'EWI01261682',
     expectedStatus: 200,
   },
+  {
+    id: 'add-additional-tenant',
+    name: 'Add Additional Tenant',
+    description: 'Add an additional tenant to an existing deposit',
+    endpoint: '/services/apexrest/nrla/tenant/add/{DAN}',
+    method: 'POST',
+    category: 'Cart Management',
+    requiresPathParam: true,
+    pathParamName: 'DAN',
+    pathParamPlaceholder: 'EWI01261682',
+    expectedStatus: 200,
+  },
 ]
 
 export const API_CATEGORIES = [

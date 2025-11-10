@@ -246,6 +246,54 @@ export function generateDepositoryManagedData() {
   })
 }
 
+export function generateAddAdditionalTenantData() {
+  const numTenants = faker.number.int({ min: 1, max: 2 })
+  const people = []
+
+  // Generate tenant(s)
+  for (let i = 0; i < numTenants; i++) {
+    const isBusiness = faker.datatype.boolean()
+    // Generate UK landline number (01 or 02 prefix)
+    const landlinePrefix = faker.helpers.arrayElement(['01', '02'])
+    const landlineNumber = `${landlinePrefix}${faker.string.numeric(9)}`
+
+    const person: any = {
+      person_classification: 'Tenant',
+      person_id: `TEN${faker.string.alphanumeric(8).toUpperCase()}`,
+      person_reference: `TENREF${faker.string.alphanumeric(6).toUpperCase()}`,
+      person_title: faker.person.prefix(),
+      person_firstname: faker.person.firstName(),
+      person_surname: faker.person.lastName(),
+      is_business: isBusiness.toString().toUpperCase(),
+      person_paon: faker.location.buildingNumber(),
+      person_street: faker.location.street(),
+      person_locality: faker.location.county(),
+      person_town: faker.location.city(),
+      person_postcode: generateUKPostcode(),
+      person_country: 'United Kingdom',
+      person_phone: landlineNumber,
+      person_email: faker.internet.email(),
+      person_mobile: `07${faker.string.numeric(9)}`,
+    }
+
+    // Add optional fields
+    if (isBusiness) {
+      person.business_name = faker.company.name()
+    }
+
+    const saon = faker.datatype.boolean() ? `Flat ${faker.number.int({ min: 1, max: 20 })}` : null
+    if (saon) {
+      person.person_saon = saon
+    }
+
+    people.push(person)
+  }
+
+  return removeEmptyFields({
+    people
+  })
+}
+
 /**
  * Generate test data based on endpoint ID
  */
@@ -262,6 +310,8 @@ export function generateTestDataForEndpoint(endpointId: string): any {
       return generateTransferDepositData()
     case 'mark-depository-managed':
       return generateDepositoryManagedData()
+    case 'add-additional-tenant':
+      return generateAddAdditionalTenantData()
     default:
       // For GET endpoints or endpoints without specific generators
       return null

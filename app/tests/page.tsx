@@ -13,7 +13,7 @@ export default function TestsPage() {
   const [searchQuery, setSearchQuery] = useState('')
 
   // NRLA endpoints
-  const nrlaEndpointIds = ['delete-deposit', 'add-to-cart']
+  const nrlaEndpointIds = ['delete-deposit', 'add-to-cart', 'add-additional-tenant']
 
   // Filter and separate endpoints
   const allEndpoints = API_ENDPOINTS.filter(endpoint => {
