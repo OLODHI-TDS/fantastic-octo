@@ -232,6 +232,18 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     pathParamPlaceholder: 'EWI01261682',
     expectedStatus: 200,
   },
+  {
+    id: 'remove-tenant',
+    name: 'Remove Tenant',
+    description: 'Remove a tenant from an existing deposit',
+    endpoint: '/services/apexrest/nrla/tenant/remove/{DAN}',
+    method: 'POST',
+    category: 'Cart Management',
+    requiresPathParam: true,
+    pathParamName: 'DAN',
+    pathParamPlaceholder: 'EWI01261682',
+    expectedStatus: 200,
+  },
 ]
 
 export const API_CATEGORIES = [

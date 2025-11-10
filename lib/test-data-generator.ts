@@ -294,6 +294,13 @@ export function generateAddAdditionalTenantData() {
   })
 }
 
+export function generateRemoveTenantData() {
+  return {
+    person_id: `TEN${faker.string.alphanumeric(8).toUpperCase()}`,
+    delete: 'true'
+  }
+}
+
 /**
  * Generate test data based on endpoint ID
  */
@@ -312,6 +319,8 @@ export function generateTestDataForEndpoint(endpointId: string): any {
       return generateDepositoryManagedData()
     case 'add-additional-tenant':
       return generateAddAdditionalTenantData()
+    case 'remove-tenant':
+      return generateRemoveTenantData()
     default:
       // For GET endpoints or endpoints without specific generators
       return null
