@@ -41,6 +41,7 @@ import { depositUpdateScenarios } from '@/lib/test-scenarios/deposit-update-scen
 import { deleteDepositScenarios } from '@/lib/test-scenarios/delete-deposit-scenarios'
 import { addToCartScenarios } from '@/lib/test-scenarios/add-to-cart-scenarios'
 import { removeFromCartScenarios } from '@/lib/test-scenarios/remove-from-cart-scenarios'
+import { listCartContentsScenarios } from '@/lib/test-scenarios/list-cart-contents-scenarios'
 import { addAdditionalTenantScenarios } from '@/lib/test-scenarios/add-additional-tenant-scenarios'
 import { removeTenantScenarios } from '@/lib/test-scenarios/remove-tenant-scenarios'
 import { tenancyInfoScenarios } from '@/lib/test-scenarios/tenancy-info-scenarios'
@@ -97,6 +98,8 @@ function getScenariosForEndpoint(endpointId: string): TestScenario[] {
       return addToCartScenarios
     case 'remove-from-cart':
       return removeFromCartScenarios
+    case 'list-cart-contents':
+      return listCartContentsScenarios
     case 'add-additional-tenant':
       return addAdditionalTenantScenarios
     case 'remove-tenant':

@@ -256,6 +256,15 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     pathParamPlaceholder: 'EWI01261682',
     expectedStatus: 200,
   },
+  {
+    id: 'list-cart-contents',
+    name: 'List Cart Contents',
+    description: 'Get list of all deposits currently in the NRLA cart',
+    endpoint: '/services/apexrest/cart/list',
+    method: 'GET',
+    category: 'Cart Management',
+    expectedStatus: 200,
+  },
 ]
 
 export const API_CATEGORIES = [
