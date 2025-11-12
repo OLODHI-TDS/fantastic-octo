@@ -214,8 +214,8 @@ export default function EndpointDashboard() {
   }, [endpointId, selectedCredentialId])
 
   useEffect(() => {
-    // For transfer-branch-deposit, populate target credentials from the same environment
-    if (endpointId === 'transfer-branch-deposit' && selectedEnvironmentId) {
+    // For transfer-deposit, populate target credentials from the same environment
+    if (endpointId === 'transfer-deposit' && selectedEnvironmentId) {
       // Use the already fetched credentials as target options
       setTargetCredentials(credentials)
     } else {
