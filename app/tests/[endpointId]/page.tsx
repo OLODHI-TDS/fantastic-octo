@@ -53,7 +53,7 @@ import { repaymentResponseScenarios } from '@/lib/test-scenarios/repayment-respo
 import { branchesListScenarios } from '@/lib/test-scenarios/branches-list-scenarios'
 import { singleBranchScenarios } from '@/lib/test-scenarios/single-branch-scenarios'
 import { disputeStatusScenarios } from '@/lib/test-scenarios/dispute-status-scenarios'
-import { transferBranchDepositScenarios } from '@/lib/test-scenarios/transfer-branch-deposit-scenarios'
+import { transferDepositScenarios } from '@/lib/test-scenarios/transfer-deposit-scenarios'
 import { allTenanciesScenarios } from '@/lib/test-scenarios/all-tenancies-scenarios'
 
 interface Environment {
@@ -122,8 +122,8 @@ function getScenariosForEndpoint(endpointId: string): TestScenario[] {
       return singleBranchScenarios
     case 'dispute-status':
       return disputeStatusScenarios
-    case 'transfer-branch-deposit':
-      return transferBranchDepositScenarios
+    case 'transfer-deposit':
+      return transferDepositScenarios
     case 'all-tenancies':
       return allTenanciesScenarios
     default:

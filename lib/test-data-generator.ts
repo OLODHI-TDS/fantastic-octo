@@ -230,12 +230,22 @@ export function generateRepaymentRequestData() {
 }
 
 export function generateTransferDepositData() {
-  return removeEmptyFields({
-    dan: `EWC${faker.string.numeric(8)}`,
-    new_property_id: `PROP${faker.string.alphanumeric(8).toUpperCase()}`,
-    new_landlord_id: `LL${faker.string.alphanumeric(8).toUpperCase()}`,
-    transfer_date: faker.date.recent().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '-'),
-  })
+  // Generate either person transfer OR branch transfer randomly
+  const isPersonTransfer = faker.datatype.boolean()
+
+  if (isPersonTransfer) {
+    // Transfer to person by email
+    return {
+      dan: `EWC${faker.string.numeric(8)}`,
+      person_email: faker.internet.email()
+    }
+  } else {
+    // Transfer to branch by branch_id
+    return {
+      dan: `EWC${faker.string.numeric(8)}`,
+      branch_id: `BR${faker.string.numeric(4)}${faker.string.alpha({ length: 2, casing: 'upper' })}`
+    }
+  }
 }
 
 export function generateDepositoryManagedData() {
