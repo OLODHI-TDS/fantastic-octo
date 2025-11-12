@@ -781,52 +781,135 @@ export default function EndpointDashboard() {
         </Card>
       )}
 
-      {/* Select Target Branch (for transfer-branch-deposit) */}
-      {endpointId === 'transfer-branch-deposit' && (
+      {/* Transfer Deposit Helper (for transfer-deposit) */}
+      {endpointId === 'transfer-deposit' && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Select Target Branch</CardTitle>
+            <CardTitle>Transfer Deposit Helper</CardTitle>
             <CardDescription>
-              Select the credential that represents the target branch where you want to transfer the deposit
+              Transfer a deposit to another member (by email) or branch (by branch_id)
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-2">
-              <Label>Target Branch Credential *</Label>
-              <Select
-                value={selectedTargetCredentialId}
-                onValueChange={(value) => {
-                  setSelectedTargetCredentialId(value)
-                  // Auto-populate the branch_id in the request body
-                  const targetCred = targetCredentials.find(c => c.id === value)
-                  if (targetCred && targetCred.branchId) {
-                    const payload = {
-                      branch_id: targetCred.branchId,
+            <div className="grid gap-4">
+              {/* DAN Input */}
+              <div className="grid gap-2">
+                <Label htmlFor="transfer-dan">DAN (Deposit Account Number) *</Label>
+                <Input
+                  id="transfer-dan"
+                  placeholder="e.g., EWC00004420 or EWI01261682"
+                  onChange={(e) => {
+                    // Store DAN value for later use
+                    const danValue = e.target.value
+                    // Try to parse existing body to preserve other fields
+                    try {
+                      const existing = requestBody ? JSON.parse(requestBody) : {}
+                      existing.dan = danValue
+                      setRequestBody(JSON.stringify(existing, null, 2))
+                    } catch {
+                      // If parse fails, create new object
+                      setRequestBody(JSON.stringify({ dan: danValue }, null, 2))
                     }
-                    setRequestBody(JSON.stringify(payload, null, 2))
-                  }
-                }}
-                disabled={!selectedCredentialId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select target branch credential" />
-                </SelectTrigger>
-                <SelectContent>
-                  {targetCredentials.map((cred) => (
-                    <SelectItem key={cred.id} value={cred.id}>
-                      {cred.orgName} - {cred.branchId || 'N/A'} ({cred.authType})
-                    </SelectItem>
-                  ))}
-                  {targetCredentials.length === 0 && (
-                    <SelectItem value="none" disabled>
-                      No credentials available for target branch
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                Selecting a target credential will auto-populate the Request Body with the branch_id. The deposit will be transferred to this branch. You can also manually add person_id if needed.
-              </p>
+                  }}
+                />
+              </div>
+
+              {/* Transfer Type Selection */}
+              <div className="grid gap-2">
+                <Label>Transfer Type *</Label>
+                <div className="flex gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      try {
+                        const existing = requestBody ? JSON.parse(requestBody) : {}
+                        // Remove branch_id if present, keep/add person_email
+                        delete existing.branch_id
+                        existing.person_email = existing.person_email || ''
+                        setRequestBody(JSON.stringify(existing, null, 2))
+                        toast({
+                          title: 'Person Transfer Selected',
+                          description: 'Fill in the person_email field below',
+                        })
+                      } catch {
+                        setRequestBody(JSON.stringify({ dan: '', person_email: '' }, null, 2))
+                      }
+                    }}
+                    className="flex-1"
+                  >
+                    Transfer to Person
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      try {
+                        const existing = requestBody ? JSON.parse(requestBody) : {}
+                        // Remove person_email if present, keep/add branch_id
+                        delete existing.person_email
+                        existing.branch_id = existing.branch_id || ''
+                        setRequestBody(JSON.stringify(existing, null, 2))
+                        toast({
+                          title: 'Branch Transfer Selected',
+                          description: 'Fill in the branch_id field below',
+                        })
+                      } catch {
+                        setRequestBody(JSON.stringify({ dan: '', branch_id: '' }, null, 2))
+                      }
+                    }}
+                    className="flex-1"
+                  >
+                    Transfer to Branch
+                  </Button>
+                </div>
+              </div>
+
+              {/* Quick Branch Selection */}
+              <div className="grid gap-2">
+                <Label>Quick Branch Selection (Optional)</Label>
+                <Select
+                  value={selectedTargetCredentialId}
+                  onValueChange={(value) => {
+                    setSelectedTargetCredentialId(value)
+                    const targetCred = targetCredentials.find(c => c.id === value)
+                    if (targetCred && targetCred.branchId) {
+                      try {
+                        const existing = requestBody ? JSON.parse(requestBody) : {}
+                        delete existing.person_email
+                        existing.branch_id = targetCred.branchId
+                        setRequestBody(JSON.stringify(existing, null, 2))
+                        toast({
+                          title: 'Branch ID Populated',
+                          description: `Set to: ${targetCred.branchId}`,
+                        })
+                      } catch {
+                        setRequestBody(JSON.stringify({ dan: '', branch_id: targetCred.branchId }, null, 2))
+                      }
+                    }
+                  }}
+                  disabled={!selectedCredentialId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a branch credential" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {targetCredentials.map((cred) => (
+                      <SelectItem key={cred.id} value={cred.id}>
+                        {cred.orgName} - {cred.branchId || 'N/A'} ({cred.authType})
+                      </SelectItem>
+                    ))}
+                    {targetCredentials.length === 0 && (
+                      <SelectItem value="none" disabled>
+                        No other credentials available
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Select a branch credential to auto-populate branch_id, or manually enter person_email/branch_id in the Request Body editor below.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
