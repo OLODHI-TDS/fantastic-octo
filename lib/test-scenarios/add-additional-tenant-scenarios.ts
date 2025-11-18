@@ -214,6 +214,30 @@ export const addAdditionalTenantScenarios: TestScenario[] = [
     },
   },
 
+  // NEGATIVE TESTS - Business Logic / Deposit Status
+  {
+    id: 'negative-protected-deposit',
+    name: 'Negative: Add Tenant to Protected Deposit',
+    description: 'Attempt to add tenant to a deposit in "Deposits protected by scheme" status',
+    type: 'negative',
+    expectedStatus: 400,
+    generatePayload: () => generateAddAdditionalTenantData(),
+    // Note: Requires DAN for a deposit in "Deposits protected by scheme" status
+    // Additional tenants can ONLY be added when deposit status is "Registered (not paid)"
+    // Expected: 400 Bad Request - cannot add tenants to protected deposit
+  },
+
+  {
+    id: 'negative-released-deposit',
+    name: 'Negative: Add Tenant to Released Deposit',
+    description: 'Attempt to add tenant to a deposit that has been released/closed',
+    type: 'negative',
+    expectedStatus: 400,
+    generatePayload: () => generateAddAdditionalTenantData(),
+    // Note: Requires DAN for a deposit that has been released
+    // Expected: 400 Bad Request - cannot add tenants to closed deposit
+  },
+
   // SECURITY TESTS
   {
     id: 'negative-sql-injection',
