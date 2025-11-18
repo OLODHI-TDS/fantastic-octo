@@ -1,6 +1,6 @@
 /**
  * Test scenarios for Transfer Deposit endpoint
- * This endpoint transfers a deposit to another member (by email) or branch (by branch_id)
+ * This endpoint transfers a deposit to another member (inter-member transfer)
  * Endpoint: /services/apexrest/transfer
  */
 
@@ -17,7 +17,7 @@ export interface TestScenario {
 }
 
 export const transferDepositScenarios: TestScenario[] = [
-  // POSITIVE TESTS - Person Transfer
+  // POSITIVE TESTS
   {
     id: 'positive-transfer-to-person',
     name: 'Positive: Transfer to Person by Email',
@@ -25,7 +25,7 @@ export const transferDepositScenarios: TestScenario[] = [
     type: 'positive',
     expectedStatus: 200,
     generatePayload: () => ({
-      dan: 'EWC00004420',
+      dan: 'NI00004420',
       person_email: 'recipient@example.com'
     }),
     // Note: Requires valid DAN and recipient email that exists in the system
@@ -39,42 +39,20 @@ export const transferDepositScenarios: TestScenario[] = [
     expectedStatus: 200,
     generatePayload: () => {
       const data = generateTransferDepositData()
-      // Ensure it's a person transfer
       return {
-        dan: data.dan || 'EWC00004420',
+        dan: data.dan || 'NI00004420',
         person_email: 'existing.member@example.com'
       }
     },
   },
 
-  // POSITIVE TESTS - Branch Transfer
   {
-    id: 'positive-transfer-to-branch',
-    name: 'Positive: Transfer to Branch by Branch ID',
-    description: 'Transfer deposit to another branch using branch_id',
+    id: 'positive-transfer-generated-data',
+    name: 'Positive: Transfer with Generated Data',
+    description: 'Transfer deposit using auto-generated test data',
     type: 'positive',
     expectedStatus: 200,
-    generatePayload: () => ({
-      dan: 'EWC00004420',
-      branch_id: 'BR0435EW'
-    }),
-    // Note: Requires valid DAN and branch_id that exists in the system
-  },
-
-  {
-    id: 'positive-transfer-same-organization',
-    name: 'Positive: Transfer Within Same Organization',
-    description: 'Transfer deposit to another branch within the same organization',
-    type: 'positive',
-    expectedStatus: 200,
-    generatePayload: () => {
-      const data = generateTransferDepositData()
-      // Ensure it's a branch transfer
-      return {
-        dan: data.dan || 'EWC00004420',
-        branch_id: 'BR6354SC'
-      }
-    },
+    generatePayload: () => generateTransferDepositData(),
   },
 
   // NEGATIVE TESTS - Missing Required Fields
@@ -90,15 +68,14 @@ export const transferDepositScenarios: TestScenario[] = [
   },
 
   {
-    id: 'negative-missing-both-identifiers',
-    name: 'Negative: Missing Both person_email and branch_id',
-    description: 'Request body missing both person_email and branch_id',
+    id: 'negative-missing-email',
+    name: 'Negative: Missing person_email',
+    description: 'Request body missing the required person_email field',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      dan: 'EWC00004420'
+      dan: 'NI00004420'
     }),
-    // Note: Must provide either person_email OR branch_id
   },
 
   {
@@ -125,21 +102,16 @@ export const transferDepositScenarios: TestScenario[] = [
     }),
   },
 
-  // NEGATIVE TESTS - Invalid Data
   {
-    id: 'negative-both-identifiers',
-    name: 'Negative: Both person_email and branch_id Provided',
-    description: 'Request contains both person_email and branch_id (ambiguous)',
+    id: 'negative-empty-body',
+    name: 'Negative: Empty Request Body',
+    description: 'Request body is empty',
     type: 'negative',
     expectedStatus: 400,
-    generatePayload: () => ({
-      dan: 'EWC00004420',
-      person_email: 'recipient@example.com',
-      branch_id: 'BR0435EW'
-    }),
-    // Note: Should only provide one identifier, not both
+    generatePayload: () => ({}),
   },
 
+  // NEGATIVE TESTS - Invalid Email Format
   {
     id: 'negative-invalid-email-format',
     name: 'Negative: Invalid Email Format',
@@ -147,7 +119,7 @@ export const transferDepositScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      dan: 'EWC00004420',
+      dan: 'NI00004420',
       person_email: 'invalid-email-format'
     }),
   },
@@ -159,32 +131,44 @@ export const transferDepositScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      dan: 'EWC00004420',
+      dan: 'NI00004420',
       person_email: ''
     }),
   },
 
   {
-    id: 'negative-empty-branch-id',
-    name: 'Negative: Empty branch_id',
-    description: 'branch_id field is empty string',
+    id: 'negative-null-email',
+    name: 'Negative: Null person_email',
+    description: 'person_email field is null',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      dan: 'EWC00004420',
-      branch_id: ''
+      dan: 'NI00004420',
+      person_email: null
     }),
   },
 
   {
-    id: 'negative-invalid-branch-id-format',
-    name: 'Negative: Invalid branch_id Format',
-    description: 'branch_id has invalid format (special characters)',
+    id: 'negative-email-without-domain',
+    name: 'Negative: Email Without Domain',
+    description: 'person_email missing domain part',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      dan: 'EWC00004420',
-      branch_id: 'INVALID@#$%'
+      dan: 'NI00004420',
+      person_email: 'user@'
+    }),
+  },
+
+  {
+    id: 'negative-email-without-at',
+    name: 'Negative: Email Without @ Symbol',
+    description: 'person_email missing @ symbol',
+    type: 'negative',
+    expectedStatus: 400,
+    generatePayload: () => ({
+      dan: 'NI00004420',
+      person_email: 'userexample.com'
     }),
   },
 
@@ -196,7 +180,7 @@ export const transferDepositScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 404,
     generatePayload: () => ({
-      dan: 'EWC99999999',
+      dan: 'NI99999999',
       person_email: 'recipient@example.com'
     }),
   },
@@ -208,20 +192,8 @@ export const transferDepositScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 404,
     generatePayload: () => ({
-      dan: 'EWC00004420',
+      dan: 'NI00004420',
       person_email: 'nonexistent.user@example.com'
-    }),
-  },
-
-  {
-    id: 'negative-non-existent-branch',
-    name: 'Negative: Non-existent branch_id',
-    description: 'Attempt to transfer to a branch that does not exist',
-    type: 'negative',
-    expectedStatus: 404,
-    generatePayload: () => ({
-      dan: 'EWC00004420',
-      branch_id: 'BR9999XX'
     }),
   },
 
@@ -245,10 +217,10 @@ export const transferDepositScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 403,
     generatePayload: () => ({
-      dan: 'NI1022709',
+      dan: 'EWC00004420',
       person_email: 'recipient@example.com'
     }),
-    // Note: Using NI DAN with EWC credentials or vice versa
+    // Note: Using EWC DAN with NI credentials or vice versa
   },
 
   {
@@ -271,7 +243,7 @@ export const transferDepositScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      dan: 'EWC00004420',
+      dan: 'NI00004420',
       person_email: 'recipient@example.com'
     }),
     // Note: Requires a DAN for a closed deposit
@@ -285,7 +257,7 @@ export const transferDepositScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      dan: 'EWC00004420',
+      dan: 'NI00004420',
       person_email: 'recipient@example.com'
     }),
     // Note: Requires a DAN for a deposit in dispute
@@ -295,14 +267,14 @@ export const transferDepositScenarios: TestScenario[] = [
   {
     id: 'negative-transfer-to-self',
     name: 'Negative: Transfer to Self',
-    description: 'Attempt to transfer deposit to the same member/branch',
+    description: 'Attempt to transfer deposit to the same member',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      dan: 'EWC00004420',
+      dan: 'NI00004420',
       person_email: 'current.owner@example.com'
     }),
-    // Note: person_email or branch_id should be the current owner
+    // Note: person_email should be the current owner
     // Expected: 400 Bad Request - cannot transfer to self
   },
 
@@ -315,7 +287,7 @@ export const transferDepositScenarios: TestScenario[] = [
     expectedStatus: 403,
     requiresDifferentCredential: true,
     generatePayload: () => ({
-      dan: 'EWC00004420',
+      dan: 'NI00004420',
       person_email: 'recipient@example.com'
     }),
     // Note: Use credentials from different organization
@@ -328,7 +300,7 @@ export const transferDepositScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 403,
     generatePayload: () => ({
-      dan: 'EWC00001234',
+      dan: 'NI00001234',
       person_email: 'recipient@example.com'
     }),
     // Note: DAN from a different organization
@@ -342,7 +314,7 @@ export const transferDepositScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      dan: "EWC' OR '1'='1",
+      dan: "NI' OR '1'='1",
       person_email: 'recipient@example.com'
     }),
   },
@@ -354,7 +326,7 @@ export const transferDepositScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      dan: 'EWC00004420',
+      dan: 'NI00004420',
       person_email: "test' OR '1'='1'--@example.com"
     }),
   },
@@ -366,20 +338,20 @@ export const transferDepositScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      dan: 'EWC00004420',
+      dan: 'NI00004420',
       person_email: '<script>alert("xss")</script>@example.com'
     }),
   },
 
   {
-    id: 'negative-xss-attempt-branch-id',
-    name: 'Negative: XSS Attempt in branch_id',
-    description: 'Security test - attempt XSS injection in branch_id',
+    id: 'negative-xss-attempt-dan',
+    name: 'Negative: XSS Attempt in DAN',
+    description: 'Security test - attempt XSS injection in dan field',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({
-      dan: 'EWC00004420',
-      branch_id: '<script>alert("xss")</script>'
+      dan: '<script>alert("xss")</script>',
+      person_email: 'recipient@example.com'
     }),
   },
 ]

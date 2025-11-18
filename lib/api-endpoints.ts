@@ -162,10 +162,22 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
   {
     id: 'transfer-deposit',
     name: 'Transfer Deposit',
-    description: 'Transfer a deposit to another member (by email) or branch (by branch_id)',
+    description: 'Transfer a deposit to another member (inter-member transfer)',
     endpoint: '/services/apexrest/transfer',
     method: 'POST',
     category: 'Deposit Management',
+    expectedStatus: 200,
+  },
+  {
+    id: 'transfer-branch-deposit',
+    name: 'Transfer Branch Deposit',
+    description: 'Transfer a deposit to another branch within the same member (intra-member transfer)',
+    endpoint: '/services/apexrest/transferBranch/{DAN}',
+    method: 'POST',
+    category: 'Deposit Management',
+    requiresPathParam: true,
+    pathParamName: 'DAN',
+    pathParamPlaceholder: 'NI00004420',
     expectedStatus: 200,
   },
   {

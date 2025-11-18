@@ -230,22 +230,26 @@ export function generateRepaymentRequestData() {
 }
 
 export function generateTransferDepositData() {
-  // Generate either person transfer OR branch transfer randomly
-  const isPersonTransfer = faker.datatype.boolean()
-
-  if (isPersonTransfer) {
-    // Transfer to person by email
-    return {
-      dan: `EWC${faker.string.numeric(8)}`,
-      person_email: faker.internet.email()
-    }
-  } else {
-    // Transfer to branch by branch_id
-    return {
-      dan: `EWC${faker.string.numeric(8)}`,
-      branch_id: `BR${faker.string.numeric(4)}${faker.string.alpha({ length: 2, casing: 'upper' })}`
-    }
+  // Inter-member transfer: transfer to another member by person email
+  return {
+    dan: `NI${faker.string.numeric(8)}`,
+    person_email: faker.internet.email()
   }
+}
+
+export function generateTransferBranchDepositData() {
+  // Intra-member transfer: transfer to another branch within same member
+  // DAN is in path parameter, so we only need Branch_id (and optionally person_id)
+  const data: any = {
+    Branch_id: `BR${faker.string.numeric(4)}${faker.string.alpha({ length: 2, casing: 'upper' })}`
+  }
+
+  // Optionally include person_id to clone/link landlord
+  if (faker.datatype.boolean()) {
+    data.person_id = `${faker.string.numeric(3)}`
+  }
+
+  return removeEmptyFields(data)
 }
 
 export function generateDepositoryManagedData() {
@@ -335,6 +339,8 @@ export function generateTestDataForEndpoint(endpointId: string): any {
       return generateRepaymentRequestData()
     case 'transfer-deposit':
       return generateTransferDepositData()
+    case 'transfer-branch-deposit':
+      return generateTransferBranchDepositData()
     case 'mark-depository-managed':
       return generateDepositoryManagedData()
     case 'add-additional-tenant':

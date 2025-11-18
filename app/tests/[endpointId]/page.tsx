@@ -54,6 +54,7 @@ import { branchesListScenarios } from '@/lib/test-scenarios/branches-list-scenar
 import { singleBranchScenarios } from '@/lib/test-scenarios/single-branch-scenarios'
 import { disputeStatusScenarios } from '@/lib/test-scenarios/dispute-status-scenarios'
 import { transferDepositScenarios } from '@/lib/test-scenarios/transfer-deposit-scenarios'
+import { transferBranchDepositScenarios } from '@/lib/test-scenarios/transfer-branch-deposit-scenarios'
 import { allTenanciesScenarios } from '@/lib/test-scenarios/all-tenancies-scenarios'
 
 interface Environment {
@@ -124,6 +125,8 @@ function getScenariosForEndpoint(endpointId: string): TestScenario[] {
       return disputeStatusScenarios
     case 'transfer-deposit':
       return transferDepositScenarios
+    case 'transfer-branch-deposit':
+      return transferBranchDepositScenarios
     case 'all-tenancies':
       return allTenanciesScenarios
     default:
@@ -214,8 +217,8 @@ export default function EndpointDashboard() {
   }, [endpointId, selectedCredentialId])
 
   useEffect(() => {
-    // For transfer-deposit, populate target credentials from the same environment
-    if (endpointId === 'transfer-deposit' && selectedEnvironmentId) {
+    // For transfer-deposit and transfer-branch-deposit, populate target credentials from the same environment
+    if ((endpointId === 'transfer-deposit' || endpointId === 'transfer-branch-deposit') && selectedEnvironmentId) {
       // Use the already fetched credentials as target options
       setTargetCredentials(credentials)
     } else {
@@ -781,13 +784,13 @@ export default function EndpointDashboard() {
         </Card>
       )}
 
-      {/* Transfer Deposit Helper (for transfer-deposit) */}
+      {/* Transfer Deposit Helper (for transfer-deposit) - Inter-member transfer */}
       {endpointId === 'transfer-deposit' && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Transfer Deposit Helper</CardTitle>
             <CardDescription>
-              Transfer a deposit to another member (by email) or branch (by branch_id)
+              Transfer a deposit to another member (inter-member transfer by email)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -797,77 +800,76 @@ export default function EndpointDashboard() {
                 <Label htmlFor="transfer-dan">DAN (Deposit Account Number) *</Label>
                 <Input
                   id="transfer-dan"
-                  placeholder="e.g., EWC00004420 or EWI01261682"
+                  placeholder="e.g., NI00004420"
                   onChange={(e) => {
-                    // Store DAN value for later use
                     const danValue = e.target.value
-                    // Try to parse existing body to preserve other fields
                     try {
                       const existing = requestBody ? JSON.parse(requestBody) : {}
                       existing.dan = danValue
                       setRequestBody(JSON.stringify(existing, null, 2))
                     } catch {
-                      // If parse fails, create new object
-                      setRequestBody(JSON.stringify({ dan: danValue }, null, 2))
+                      setRequestBody(JSON.stringify({ dan: danValue, person_email: '' }, null, 2))
                     }
                   }}
                 />
               </div>
 
-              {/* Transfer Type Selection */}
+              {/* Person Email Input */}
               <div className="grid gap-2">
-                <Label>Transfer Type *</Label>
-                <div className="flex gap-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      try {
-                        const existing = requestBody ? JSON.parse(requestBody) : {}
-                        // Remove branch_id if present, keep/add person_email
-                        delete existing.branch_id
-                        existing.person_email = existing.person_email || ''
-                        setRequestBody(JSON.stringify(existing, null, 2))
-                        toast({
-                          title: 'Person Transfer Selected',
-                          description: 'Fill in the person_email field below',
-                        })
-                      } catch {
-                        setRequestBody(JSON.stringify({ dan: '', person_email: '' }, null, 2))
-                      }
-                    }}
-                    className="flex-1"
-                  >
-                    Transfer to Person
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      try {
-                        const existing = requestBody ? JSON.parse(requestBody) : {}
-                        // Remove person_email if present, keep/add branch_id
-                        delete existing.person_email
-                        existing.branch_id = existing.branch_id || ''
-                        setRequestBody(JSON.stringify(existing, null, 2))
-                        toast({
-                          title: 'Branch Transfer Selected',
-                          description: 'Fill in the branch_id field below',
-                        })
-                      } catch {
-                        setRequestBody(JSON.stringify({ dan: '', branch_id: '' }, null, 2))
-                      }
-                    }}
-                    className="flex-1"
-                  >
-                    Transfer to Branch
-                  </Button>
-                </div>
+                <Label htmlFor="transfer-person-email">Person Email *</Label>
+                <Input
+                  id="transfer-person-email"
+                  type="email"
+                  placeholder="e.g., recipient@example.com"
+                  onChange={(e) => {
+                    const emailValue = e.target.value
+                    try {
+                      const existing = requestBody ? JSON.parse(requestBody) : {}
+                      existing.person_email = emailValue
+                      setRequestBody(JSON.stringify(existing, null, 2))
+                    } catch {
+                      setRequestBody(JSON.stringify({ dan: '', person_email: emailValue }, null, 2))
+                    }
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter the email address of the recipient member
+                </p>
               </div>
 
-              {/* Quick Branch Selection */}
+              {/* Quick Create Button */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setRequestBody(JSON.stringify({ dan: 'NI00004420', person_email: 'recipient@example.com' }, null, 2))
+                  toast({
+                    title: 'Template Created',
+                    description: 'Fill in the DAN and person_email fields',
+                  })
+                }}
+              >
+                Create Template
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Transfer Branch Deposit Helper (for transfer-branch-deposit) - Intra-member transfer */}
+      {endpointId === 'transfer-branch-deposit' && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Transfer Branch Deposit Helper</CardTitle>
+            <CardDescription>
+              Transfer a deposit to another branch within the same member (intra-member transfer)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              {/* Branch ID Selection */}
               <div className="grid gap-2">
-                <Label>Quick Branch Selection (Optional)</Label>
+                <Label>Target Branch ID *</Label>
                 <Select
                   value={selectedTargetCredentialId}
                   onValueChange={(value) => {
@@ -876,15 +878,14 @@ export default function EndpointDashboard() {
                     if (targetCred && targetCred.branchId) {
                       try {
                         const existing = requestBody ? JSON.parse(requestBody) : {}
-                        delete existing.person_email
-                        existing.branch_id = targetCred.branchId
+                        existing.Branch_id = targetCred.branchId
                         setRequestBody(JSON.stringify(existing, null, 2))
                         toast({
                           title: 'Branch ID Populated',
                           description: `Set to: ${targetCred.branchId}`,
                         })
                       } catch {
-                        setRequestBody(JSON.stringify({ dan: '', branch_id: targetCred.branchId }, null, 2))
+                        setRequestBody(JSON.stringify({ Branch_id: targetCred.branchId }, null, 2))
                       }
                     }
                   }}
@@ -907,9 +908,71 @@ export default function EndpointDashboard() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Select a branch credential to auto-populate branch_id, or manually enter person_email/branch_id in the Request Body editor below.
+                  Select a branch from your credentials to auto-populate Branch_id
                 </p>
               </div>
+
+              {/* Manual Branch ID Input */}
+              <div className="grid gap-2">
+                <Label htmlFor="transfer-branch-id">Or Enter Branch ID Manually *</Label>
+                <Input
+                  id="transfer-branch-id"
+                  placeholder="e.g., BR3224SC"
+                  onChange={(e) => {
+                    const branchIdValue = e.target.value
+                    try {
+                      const existing = requestBody ? JSON.parse(requestBody) : {}
+                      existing.Branch_id = branchIdValue
+                      setRequestBody(JSON.stringify(existing, null, 2))
+                    } catch {
+                      setRequestBody(JSON.stringify({ Branch_id: branchIdValue }, null, 2))
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Optional Person ID Input */}
+              <div className="grid gap-2">
+                <Label htmlFor="transfer-person-id">Person ID (Optional)</Label>
+                <Input
+                  id="transfer-person-id"
+                  placeholder="e.g., 123"
+                  onChange={(e) => {
+                    const personIdValue = e.target.value
+                    try {
+                      const existing = requestBody ? JSON.parse(requestBody) : {}
+                      if (personIdValue) {
+                        existing.person_id = personIdValue
+                      } else {
+                        delete existing.person_id
+                      }
+                      setRequestBody(JSON.stringify(existing, null, 2))
+                    } catch {
+                      if (personIdValue) {
+                        setRequestBody(JSON.stringify({ Branch_id: '', person_id: personIdValue }, null, 2))
+                      }
+                    }
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Optional: person_id to clone/link the landlord
+                </p>
+              </div>
+
+              {/* Quick Create Button */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setRequestBody(JSON.stringify({ Branch_id: 'BR3224SC' }, null, 2))
+                  toast({
+                    title: 'Template Created',
+                    description: 'Fill in the Branch_id field (and optionally person_id)',
+                  })
+                }}
+              >
+                Create Template
+              </Button>
             </div>
           </CardContent>
         </Card>
