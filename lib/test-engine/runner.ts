@@ -34,6 +34,22 @@ export interface TestExecutionContext {
 }
 
 /**
+ * Transform endpoint for OAuth2 (add /auth/ prefix for display purposes)
+ * Mirrors the logic in EWCRestClient.transformEndpointForOAuth2()
+ */
+function transformEndpointForDisplay(endpoint: string, credential: EWCCredentials): string {
+  if (credential.authType === 'oauth2') {
+    if (endpoint.startsWith('/services/apexrest/')) {
+      if (endpoint === '/services/apexrest/authorise') {
+        return endpoint
+      }
+      return endpoint.replace('/services/apexrest/', '/services/apexrest/auth/')
+    }
+  }
+  return endpoint
+}
+
+/**
  * Build alias URL if useAliasUrl is enabled
  */
 function buildAliasUrl(test: Test, credential: EWCCredentials): string | null {
@@ -168,7 +184,7 @@ export async function executeTest(
         responseTime,
         statusCode: response.statusCode,
         request: {
-          url: `${instanceUrl}${actualEndpoint}`,
+          url: `${instanceUrl}${transformEndpointForDisplay(actualEndpoint, credential)}`,
           method: test.method,
           headers: requestHeaders,
           body: test.body,
@@ -204,7 +220,7 @@ export async function executeTest(
       responseTime,
       statusCode: response.statusCode,
       request: {
-        url: `${instanceUrl}${actualEndpoint}`,
+        url: `${instanceUrl}${transformEndpointForDisplay(actualEndpoint, credential)}`,
         method: test.method,
         headers: requestHeaders,
         body: test.body,
@@ -258,7 +274,7 @@ export async function executeTest(
       responseTime,
       statusCode: 0,
       request: {
-        url: `${instanceUrl}${actualEndpoint}`,
+        url: `${instanceUrl}${transformEndpointForDisplay(actualEndpoint, credential)}`,
         method: test.method,
         headers: errorHeaders,
         body: test.body,
