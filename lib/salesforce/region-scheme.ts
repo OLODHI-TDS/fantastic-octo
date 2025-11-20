@@ -26,6 +26,7 @@ export const REGION_SCHEMES: RegionScheme[] = [
  * - "EW - Custodial" → "England & Wales Custodial-Custodial-"
  * - "EW - Insured" → "England & Wales Insured-Insured-"
  * - "NI - Custodial" → "Northern Ireland-Custodial-"
+ * - "SDS - Custodial" → "SafeDeposits Scotland-Custodial-"
  */
 export function getRegionSchemePrefix(regionScheme: string): string {
   const mapping: Record<string, string> = {
@@ -33,7 +34,7 @@ export function getRegionSchemePrefix(regionScheme: string): string {
     'EW - Insured': 'England & Wales Insured-Insured',
     'NI - Custodial': 'Northern Ireland-Custodial',
     'NI - Insured': 'Northern Ireland-Insured',
-    'SDS - Custodial': 'Safe Deposits Scotland-Custodial',
+    'SDS - Custodial': 'SafeDeposits Scotland-Custodial',
   }
 
   const prefix = mapping[regionScheme]
