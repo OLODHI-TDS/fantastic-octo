@@ -262,7 +262,7 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     id: 'list-cart-contents',
     name: 'List Cart Contents',
     description: 'Get list of all deposits currently in the NRLA cart',
-    endpoint: '/services/apexrest/cart/list',
+    endpoint: '/services/apexrest/nrla/cart/list',
     method: 'GET',
     category: 'Cart Management',
     expectedStatus: 200,
