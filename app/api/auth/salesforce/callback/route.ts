@@ -8,7 +8,8 @@ import {
   encrypt,
 } from '@/lib/salesforce/oauth'
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+// Remove trailing slash if present
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000').replace(/\/$/, '')
 
 /**
  * GET /api/auth/salesforce/callback
