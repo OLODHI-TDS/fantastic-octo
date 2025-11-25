@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db/prisma'
 import { UpdateEnvironmentSchema } from '@/types/environment'
+import { encrypt, decrypt } from '@/lib/salesforce/oauth'
 
 // GET /api/environments/[id] - Get single environment
 export async function GET(
@@ -40,7 +41,14 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(environment)
+    // Mask sensitive OAuth fields
+    const maskedEnvironment = {
+      ...environment,
+      sfConnectedAppClientSecret: environment.sfConnectedAppClientSecret ? '••••••••' : null,
+      sfRefreshToken: environment.sfRefreshToken ? '••••••••' : null,
+    }
+
+    return NextResponse.json(maskedEnvironment)
   } catch (error) {
     console.error('Error fetching environment:', error)
     return NextResponse.json(
@@ -62,6 +70,19 @@ export async function PUT(
 
     const updateData: any = { ...validatedData }
     delete updateData.id
+
+    // Encrypt sfConnectedAppClientSecret if provided (and not masked placeholder)
+    if (updateData.sfConnectedAppClientSecret && updateData.sfConnectedAppClientSecret !== '••••••••') {
+      updateData.sfConnectedAppClientSecret = encrypt(updateData.sfConnectedAppClientSecret)
+    } else if (updateData.sfConnectedAppClientSecret === '••••••••') {
+      // If masked value sent back, don't update it
+      delete updateData.sfConnectedAppClientSecret
+    }
+
+    // Don't update sfRefreshToken directly via PUT (managed by OAuth flow)
+    if (updateData.sfRefreshToken === '••••••••') {
+      delete updateData.sfRefreshToken
+    }
 
     const environment = await prisma.environment.update({
       where: { id },

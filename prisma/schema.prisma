@@ -22,7 +22,13 @@ model Environment {
 
   // Verification credentials for standard REST API queries (used to verify test results)
   verificationEnabled     Boolean  @default(false)
-  verificationBearerToken String?  // Encrypted Bearer token for standard Salesforce REST API
+  verificationBearerToken String?  // Bearer token for standard Salesforce REST API
+
+  // Salesforce Connected App credentials for OAuth-based token retrieval
+  sfConnectedAppClientId     String?   // Consumer Key from Connected App
+  sfConnectedAppClientSecret String?   // Encrypted Consumer Secret from Connected App
+  sfRefreshToken             String?   // Encrypted refresh token for automatic token renewal
+  sfTokenExpiresAt           DateTime? // When the current access token expires
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt

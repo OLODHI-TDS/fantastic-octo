@@ -12,6 +12,11 @@ export const EnvironmentSchema = z.object({
   active: z.boolean().default(true),
   verificationEnabled: z.boolean().default(false),
   verificationBearerToken: z.string().optional(),
+  // Salesforce Connected App credentials for OAuth-based token retrieval
+  sfConnectedAppClientId: z.string().optional(),
+  sfConnectedAppClientSecret: z.string().optional(),
+  sfRefreshToken: z.string().optional(),
+  sfTokenExpiresAt: z.date().nullable().optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 })

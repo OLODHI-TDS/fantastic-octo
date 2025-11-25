@@ -22,6 +22,13 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { ChevronDown, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react'
+import { SalesforceLoginButton } from '@/components/salesforce-login-button'
 
 interface Environment {
   id?: string
@@ -32,6 +39,10 @@ interface Environment {
   active: boolean
   verificationEnabled?: boolean
   verificationBearerToken?: string
+  sfConnectedAppClientId?: string
+  sfConnectedAppClientSecret?: string
+  sfRefreshToken?: string
+  sfTokenExpiresAt?: string | Date | null
 }
 
 interface EnvironmentDialogProps {
@@ -49,6 +60,7 @@ export function EnvironmentDialog({
 }: EnvironmentDialogProps) {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [oauthConfigOpen, setOauthConfigOpen] = useState(false)
   const [formData, setFormData] = useState<Environment>({
     name: '',
     type: 'sandbox',
@@ -57,6 +69,8 @@ export function EnvironmentDialog({
     active: true,
     verificationEnabled: false,
     verificationBearerToken: '',
+    sfConnectedAppClientId: '',
+    sfConnectedAppClientSecret: '',
   })
 
   // Reset form when dialog opens
@@ -64,6 +78,10 @@ export function EnvironmentDialog({
     if (open) {
       if (environment) {
         setFormData(environment)
+        // Open OAuth config if already configured
+        if (environment.sfConnectedAppClientId) {
+          setOauthConfigOpen(true)
+        }
       } else {
         setFormData({
           name: '',
@@ -73,10 +91,37 @@ export function EnvironmentDialog({
           active: true,
           verificationEnabled: false,
           verificationBearerToken: '',
+          sfConnectedAppClientId: '',
+          sfConnectedAppClientSecret: '',
         })
+        setOauthConfigOpen(false)
       }
     }
   }, [open, environment])
+
+  // Check if OAuth is configured
+  const isOAuthConfigured = !!(formData.sfConnectedAppClientId && formData.sfConnectedAppClientSecret)
+
+  // Handler for OAuth token received
+  const handleTokenReceived = (token: string, expiresAt: string) => {
+    setFormData(prev => ({
+      ...prev,
+      verificationBearerToken: token,
+      sfTokenExpiresAt: expiresAt,
+    }))
+    toast({
+      title: 'Connected to Salesforce',
+      description: 'Bearer token has been automatically retrieved.',
+    })
+  }
+
+  const handleOAuthError = (error: string) => {
+    toast({
+      variant: 'destructive',
+      title: 'Salesforce Login Failed',
+      description: error,
+    })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -221,21 +266,100 @@ export function EnvironmentDialog({
               </div>
 
               {formData.verificationEnabled && (
-                <div className="grid gap-2 pl-6">
-                  <Label htmlFor="verificationBearerToken">Verification Bearer Token *</Label>
-                  <Textarea
-                    id="verificationBearerToken"
-                    placeholder="00D... (Salesforce session token from CLI)"
-                    value={formData.verificationBearerToken || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, verificationBearerToken: e.target.value })
-                    }
-                    rows={3}
-                    className="font-mono text-xs"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Get token via: <code className="bg-muted px-1 py-0.5 rounded">sf org display --target-org [ALIAS] --json</code>
-                  </p>
+                <div className="space-y-4 pl-6">
+                  {/* OAuth Configuration - Collapsible */}
+                  <Collapsible open={oauthConfigOpen} onOpenChange={setOauthConfigOpen}>
+                    <CollapsibleTrigger className="flex items-center gap-2 text-sm font-medium hover:text-primary transition-colors">
+                      {oauthConfigOpen ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                      OAuth Configuration
+                      {isOAuthConfigured && (
+                        <CheckCircle2 className="h-4 w-4 text-green-500 ml-1" />
+                      )}
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-3 space-y-3">
+                      <p className="text-xs text-muted-foreground">
+                        Configure a Connected App in Salesforce to enable automatic token retrieval.
+                      </p>
+                      <div className="grid gap-2">
+                        <Label htmlFor="sfConnectedAppClientId">Connected App Client ID</Label>
+                        <Input
+                          id="sfConnectedAppClientId"
+                          placeholder="Consumer Key from Connected App"
+                          value={formData.sfConnectedAppClientId || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, sfConnectedAppClientId: e.target.value })
+                          }
+                          className="font-mono text-xs"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="sfConnectedAppClientSecret">Connected App Secret</Label>
+                        <Input
+                          id="sfConnectedAppClientSecret"
+                          type="password"
+                          placeholder="Consumer Secret from Connected App"
+                          value={formData.sfConnectedAppClientSecret || ''}
+                          onChange={(e) =>
+                            setFormData({ ...formData, sfConnectedAppClientSecret: e.target.value })
+                          }
+                          className="font-mono text-xs"
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Create in Salesforce: Setup &gt; App Manager &gt; New Connected App
+                        <br />
+                        Callback URL: <code className="bg-muted px-1 py-0.5 rounded">{typeof window !== 'undefined' ? window.location.origin : ''}/api/auth/salesforce/callback</code>
+                      </p>
+                    </CollapsibleContent>
+                  </Collapsible>
+
+                  {/* Bearer Token Section */}
+                  <div className="grid gap-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="verificationBearerToken">Verification Bearer Token</Label>
+                      {formData.verificationBearerToken && (
+                        <span className="flex items-center gap-1 text-xs text-green-600">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Token configured
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Textarea
+                        id="verificationBearerToken"
+                        placeholder="00D... (Salesforce session token)"
+                        value={formData.verificationBearerToken || ''}
+                        onChange={(e) =>
+                          setFormData({ ...formData, verificationBearerToken: e.target.value })
+                        }
+                        rows={2}
+                        className="font-mono text-xs flex-1"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-muted-foreground">
+                        Get token manually: <code className="bg-muted px-1 py-0.5 rounded">sf org display --target-org [ALIAS]</code>
+                      </p>
+                      {environment?.id && isOAuthConfigured && (
+                        <SalesforceLoginButton
+                          environmentId={environment.id}
+                          disabled={!isOAuthConfigured}
+                          onTokenReceived={handleTokenReceived}
+                          onError={handleOAuthError}
+                        />
+                      )}
+                    </div>
+                    {!environment?.id && isOAuthConfigured && (
+                      <p className="text-xs text-amber-600 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        Save the environment first to use Salesforce Login
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

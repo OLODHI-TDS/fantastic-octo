@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db/prisma'
 import { CreateEnvironmentSchema } from '@/types/environment'
+import { encrypt, decrypt } from '@/lib/salesforce/oauth'
 
 // GET /api/environments - List all environments
 export async function GET() {
@@ -29,7 +30,15 @@ export async function GET() {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json(environments)
+    // Map environments to mask sensitive OAuth fields but indicate if they're configured
+    const mappedEnvironments = environments.map(env => ({
+      ...env,
+      // Don't expose the actual secret, just indicate if it's configured
+      sfConnectedAppClientSecret: env.sfConnectedAppClientSecret ? '••••••••' : null,
+      sfRefreshToken: env.sfRefreshToken ? '••••••••' : null,
+    }))
+
+    return NextResponse.json(mappedEnvironments)
   } catch (error) {
     console.error('Error fetching environments:', error)
     return NextResponse.json(
@@ -45,8 +54,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = CreateEnvironmentSchema.parse(body)
 
+    // Prepare data, encrypting sensitive OAuth fields
+    const createData: any = { ...validatedData }
+    if (createData.sfConnectedAppClientSecret) {
+      createData.sfConnectedAppClientSecret = encrypt(createData.sfConnectedAppClientSecret)
+    }
+
     const environment = await prisma.environment.create({
-      data: validatedData,
+      data: createData,
       include: {
         credentials: {
           select: {
