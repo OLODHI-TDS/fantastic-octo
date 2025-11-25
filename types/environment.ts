@@ -13,9 +13,9 @@ export const EnvironmentSchema = z.object({
   verificationEnabled: z.boolean().default(false),
   verificationBearerToken: z.string().optional(),
   // Salesforce Connected App credentials for OAuth-based token retrieval
-  sfConnectedAppClientId: z.string().optional(),
-  sfConnectedAppClientSecret: z.string().optional(),
-  sfRefreshToken: z.string().optional(),
+  sfConnectedAppClientId: z.string().nullable().optional(),
+  sfConnectedAppClientSecret: z.string().nullable().optional(),
+  sfRefreshToken: z.string().nullable().optional(),
   sfTokenExpiresAt: z.union([z.string(), z.date(), z.null()]).optional(),
   createdAt: z.union([z.string(), z.date()]).optional(),
   updatedAt: z.union([z.string(), z.date()]).optional(),
