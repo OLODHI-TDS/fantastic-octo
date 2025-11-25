@@ -40,6 +40,20 @@ export const VERIFICATION_RULES: VerificationRule[] = [
     delay: 2000,
   },
 
+  // Remove from Cart (NRLA)
+  {
+    endpointPattern: '/cart/remove/',
+    extractIdentifier: (endpoint) => {
+      const match = endpoint.match(/(EWC|EWI|NI|SDS)\d+/i)
+      return match ? match[0] : null
+    },
+    verificationType: 'deposit-fields',
+    expectedFields: {
+      Is_Added_to_cart__c: false,
+    },
+    delay: 2000,
+  },
+
   // Deposit Creation
   {
     endpointPattern: '/depositcreation',
