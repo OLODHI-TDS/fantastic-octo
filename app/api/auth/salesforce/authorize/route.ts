@@ -4,7 +4,7 @@ import {
   getLoginUrl,
   buildAuthorizationUrl,
   encryptState,
-  decrypt,
+  generatePKCE,
 } from '@/lib/salesforce/oauth'
 
 // Remove trailing slash if present
@@ -51,8 +51,11 @@ export async function GET(request: NextRequest) {
     // Determine login URL based on environment type
     const loginUrl = getLoginUrl(environment.instanceUrl)
 
-    // Create encrypted state for CSRF protection
-    const state = encryptState(environmentId)
+    // Generate PKCE values
+    const { codeVerifier, codeChallenge } = generatePKCE()
+
+    // Create encrypted state for CSRF protection (includes code verifier for callback)
+    const state = encryptState(environmentId, codeVerifier)
 
     // Build the authorization URL
     const redirectUri = `${APP_URL}/api/auth/salesforce/callback`
@@ -61,6 +64,7 @@ export async function GET(request: NextRequest) {
       clientId: environment.sfConnectedAppClientId,
       redirectUri,
       state,
+      codeChallenge,
     })
 
     // Redirect to Salesforce login

@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    const { environmentId } = stateData
+    const { environmentId, codeVerifier } = stateData
 
     // Fetch the environment
     const environment = await prisma.environment.findUnique({
@@ -86,6 +86,7 @@ export async function GET(request: NextRequest) {
       clientId: environment.sfConnectedAppClientId,
       clientSecret,
       redirectUri,
+      codeVerifier,
     })
 
     // Calculate token expiry (Salesforce tokens typically last 2 hours)
