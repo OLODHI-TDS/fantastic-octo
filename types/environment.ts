@@ -16,9 +16,9 @@ export const EnvironmentSchema = z.object({
   sfConnectedAppClientId: z.string().optional(),
   sfConnectedAppClientSecret: z.string().optional(),
   sfRefreshToken: z.string().optional(),
-  sfTokenExpiresAt: z.date().nullable().optional(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
+  sfTokenExpiresAt: z.union([z.string(), z.date(), z.null()]).optional(),
+  createdAt: z.union([z.string(), z.date()]).optional(),
+  updatedAt: z.union([z.string(), z.date()]).optional(),
 })
 
 export type Environment = z.infer<typeof EnvironmentSchema>
