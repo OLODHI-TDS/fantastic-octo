@@ -58,9 +58,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = CreateTestSchema.parse(body)
 
+    // Handle empty credentialId (for fixed API key endpoints)
+    const credentialId = validatedData.credentialId && validatedData.credentialId.trim() !== ''
+      ? validatedData.credentialId
+      : null
+
     const test = await prisma.test.create({
       data: {
         ...validatedData,
+        credentialId, // Use sanitized credentialId (null if empty)
         headers: validatedData.headers ? JSON.stringify(validatedData.headers) : null,
         body: validatedData.body ? JSON.stringify(validatedData.body) : null,
         validations: validatedData.validations ? JSON.stringify(validatedData.validations) : null,
