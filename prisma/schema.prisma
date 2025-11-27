@@ -71,8 +71,8 @@ model Test {
   useAliasUrl    Boolean    @default(false) // Use legacy-style alias URL
   environmentId  String
   environment    Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
-  credentialId   String
-  credential     Credential  @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  credentialId   String?    // Optional - not required for fixed API key endpoints
+  credential     Credential?  @relation(fields: [credentialId], references: [id], onDelete: Cascade)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   results        TestResult[]
@@ -83,8 +83,8 @@ model TestResult {
   id                String     @id @default(cuid())
   testId            String
   test              Test       @relation(fields: [testId], references: [id], onDelete: Cascade)
-  credentialId      String
-  credential        Credential @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+  credentialId      String?    // Optional - not required for fixed API key endpoints
+  credential        Credential? @relation(fields: [credentialId], references: [id], onDelete: Cascade)
   status            String     // "passed", "failed", "error" - actual execution status
   manualStatus      String?    // Manual override: "passed", "failed", "error" - for negative tests
   responseTime      Int        // milliseconds

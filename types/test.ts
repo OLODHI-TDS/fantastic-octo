@@ -19,7 +19,7 @@ export const TestSchema = z.object({
   })).optional(),
   useAliasUrl: z.boolean().optional().default(false),
   environmentId: z.string(),
-  credentialId: z.string(),
+  credentialId: z.string().optional().nullable(), // Optional - not required for fixed API key endpoints
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 })

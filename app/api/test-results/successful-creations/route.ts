@@ -80,11 +80,11 @@ export async function GET(request: NextRequest) {
         testName: result.test.name,
         executedAt: result.executedAt,
         responseTime: result.responseTime,
-        credential: {
+        credential: result.credential ? {
           id: result.credential.id,
           orgName: result.credential.orgName,
           authType: result.credential.authType,
-        },
+        } : null,
         // Key reference fields needed for update
         references: {
           user_tenancy_reference: tenancy.user_tenancy_reference,

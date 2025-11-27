@@ -17,6 +17,10 @@ export interface ApiEndpoint {
   supportsAliasUrl?: boolean
   aliasEndpoint?: string // The alias endpoint path (will be combined with baseURL)
   aliasAuthInUrl?: boolean // If true, member_id/branch_id/api_key go in URL path
+  // Fixed API key support (for endpoints that don't use credential system)
+  usesFixedApiKey?: boolean
+  fixedApiKeyHeader?: string
+  fixedApiKeyValue?: string
 }
 
 export const API_ENDPOINTS: ApiEndpoint[] = [
@@ -277,6 +281,10 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     method: 'POST',
     category: 'Client Registration',
     expectedStatus: 200,
+    // This endpoint uses a fixed API key (not the credential system)
+    usesFixedApiKey: true,
+    fixedApiKeyHeader: 'AccessToken',
+    fixedApiKeyValue: 'England & Wales Insured-Insured-0-11111111111111111111111111',
   },
 ]
 

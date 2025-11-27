@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { EWCRestClient, EWCCredentials } from '../salesforce/ewc-client'
 import { validateResponse, allValidationsPassed, ValidationResult } from './validator'
 import { buildApiKeyToken } from '../salesforce/region-scheme'
@@ -8,7 +9,7 @@ import { API_ENDPOINTS } from '../api-endpoints'
 export interface TestExecutionResult {
   testId: string
   environmentId?: string
-  credentialId: string
+  credentialId?: string | null
   status: TestStatus
   responseTime: number
   statusCode: number
@@ -30,7 +31,11 @@ export interface TestExecutionResult {
 export interface TestExecutionContext {
   test: Test
   instanceUrl: string
-  credential: EWCCredentials
+  credential?: EWCCredentials  // Optional for fixed API key endpoints
+  fixedApiKey?: {
+    header: string
+    value: string
+  }
 }
 
 /**
@@ -104,10 +109,23 @@ function buildAliasUrl(test: Test, credential: EWCCredentials): string | null {
 export async function executeTest(
   context: TestExecutionContext
 ): Promise<TestExecutionResult> {
-  const { test, instanceUrl, credential } = context
+  const { test, instanceUrl, credential, fixedApiKey } = context
   const startTime = Date.now()
 
   try {
+    // Determine the actual endpoint to use
+    let actualEndpoint = test.endpoint
+
+    // Handle fixed API key endpoints (no credential required)
+    if (fixedApiKey) {
+      return executeFixedApiKeyRequest(test, instanceUrl, fixedApiKey, startTime)
+    }
+
+    // Standard credential-based execution
+    if (!credential) {
+      throw new Error('Credential is required for this endpoint')
+    }
+
     // Create EWC client with credentials
     const client = new EWCRestClient({
       ...credential,
@@ -118,9 +136,6 @@ export async function executeTest(
     const accessToken = credential.authType === 'apikey'
       ? buildApiKeyToken(credential.regionScheme, credential.memberId, credential.branchId, credential.apiKey!)
       : '<OAuth2 Token - Dynamically Fetched>'
-
-    // Determine the actual endpoint to use
-    let actualEndpoint = test.endpoint
 
     // Check if we should use alias URL
     const aliasUrl = buildAliasUrl(test, credential)
@@ -238,32 +253,32 @@ export async function executeTest(
   } catch (error: any) {
     const responseTime = Date.now() - startTime
 
-    // Build headers for error case (may not have been built if error occurred early)
-    const accessToken = credential.authType === 'apikey'
-      ? buildApiKeyToken(credential.regionScheme, credential.memberId, credential.branchId, credential.apiKey!)
-      : '<OAuth2 Token - Dynamically Fetched>'
-
-    // Determine the actual endpoint to use (error case)
+    // Build error headers and URL based on whether we have credential
     let actualEndpoint = test.endpoint
-
-    // Check if we should use alias URL
-    const aliasUrl = buildAliasUrl(test, credential)
-    if (aliasUrl) {
-      actualEndpoint = aliasUrl
-    }
-    // Note: OAuth2 /auth/ transformation is handled in EWCRestClient.transformEndpointForOAuth2()
-
-    // Build error headers (skip AccessToken if using alias URL with auth in URL)
-    const endpointConfigForError = API_ENDPOINTS.find(ep => test.endpoint.startsWith(ep.endpoint.split('{')[0]))
-    const skipAccessTokenHeaderForError = aliasUrl && endpointConfigForError?.aliasAuthInUrl
-
     const errorHeaders: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(test.headers || {}),
     }
 
-    if (!skipAccessTokenHeaderForError) {
-      errorHeaders.AccessToken = accessToken
+    if (credential) {
+      // Build headers for error case with credential
+      const accessToken = credential.authType === 'apikey'
+        ? buildApiKeyToken(credential.regionScheme, credential.memberId, credential.branchId, credential.apiKey!)
+        : '<OAuth2 Token - Dynamically Fetched>'
+
+      // Check if we should use alias URL
+      const aliasUrl = buildAliasUrl(test, credential)
+      if (aliasUrl) {
+        actualEndpoint = aliasUrl
+      }
+
+      // Build error headers (skip AccessToken if using alias URL with auth in URL)
+      const endpointConfigForError = API_ENDPOINTS.find(ep => test.endpoint.startsWith(ep.endpoint.split('{')[0]))
+      const skipAccessTokenHeaderForError = aliasUrl && endpointConfigForError?.aliasAuthInUrl
+
+      if (!skipAccessTokenHeaderForError) {
+        errorHeaders.AccessToken = accessToken
+      }
     }
 
     return {
@@ -274,7 +289,9 @@ export async function executeTest(
       responseTime,
       statusCode: 0,
       request: {
-        url: `${instanceUrl}${transformEndpointForDisplay(actualEndpoint, credential)}`,
+        url: credential
+          ? `${instanceUrl}${transformEndpointForDisplay(actualEndpoint, credential)}`
+          : `${instanceUrl}${actualEndpoint}`,
         method: test.method,
         headers: errorHeaders,
         body: test.body,
@@ -285,6 +302,97 @@ export async function executeTest(
         data: null,
       },
       error: error.message || 'Test execution failed',
+    }
+  }
+}
+
+/**
+ * Execute a request with a fixed API key (no credential required)
+ */
+async function executeFixedApiKeyRequest(
+  test: Test,
+  instanceUrl: string,
+  fixedApiKey: { header: string; value: string },
+  startTime: number
+): Promise<TestExecutionResult> {
+  const requestHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+    [fixedApiKey.header]: fixedApiKey.value,
+    ...(test.headers || {}),
+  }
+
+  const fullUrl = `${instanceUrl}${test.endpoint}`
+
+  try {
+    const response = await axios({
+      method: test.method,
+      url: fullUrl,
+      headers: requestHeaders,
+      data: test.body,
+      validateStatus: () => true, // Don't throw on any status code
+    })
+
+    const responseTime = Date.now() - startTime
+
+    // Validate status code
+    const statusCodeMatches = response.status === test.expectedStatus
+
+    // Validate response data
+    const validationResults = test.validations
+      ? validateResponse(response.data, test.validations)
+      : []
+
+    const allValidationsPass = validationResults.length === 0 || allValidationsPassed(validationResults)
+
+    // Determine overall test status
+    const testStatus: TestStatus =
+      statusCodeMatches && allValidationsPass ? 'passed' : 'failed'
+
+    return {
+      testId: test.id!,
+      credentialId: test.credentialId,
+      environmentId: test.environmentId,
+      status: testStatus,
+      responseTime,
+      statusCode: response.status,
+      request: {
+        url: fullUrl,
+        method: test.method,
+        headers: requestHeaders,
+        body: test.body,
+      },
+      response: {
+        status: response.status,
+        headers: response.headers as Record<string, string>,
+        data: response.data,
+      },
+      validationResults: validationResults.length > 0 ? validationResults : undefined,
+      error: !statusCodeMatches
+        ? `Expected status code ${test.expectedStatus} but got ${response.status}`
+        : undefined,
+    }
+  } catch (error: any) {
+    const responseTime = Date.now() - startTime
+
+    return {
+      testId: test.id!,
+      credentialId: test.credentialId,
+      environmentId: test.environmentId,
+      status: 'error',
+      responseTime,
+      statusCode: 0,
+      request: {
+        url: fullUrl,
+        method: test.method,
+        headers: requestHeaders,
+        body: test.body,
+      },
+      response: {
+        status: 0,
+        headers: {},
+        data: null,
+      },
+      error: error.message || 'Request failed',
     }
   }
 }

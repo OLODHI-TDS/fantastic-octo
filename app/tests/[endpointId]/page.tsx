@@ -383,11 +383,22 @@ export default function EndpointDashboard() {
   }
 
   const executeScenario = async (scenario: TestScenario) => {
-    if (!selectedEnvironmentId || !selectedCredentialId) {
+    // Check required configuration - credential not required for fixed API key endpoints
+    if (!selectedEnvironmentId) {
       toast({
         variant: 'destructive',
         title: 'Missing Configuration',
-        description: 'Please select an environment and credential',
+        description: 'Please select an environment',
+      })
+      return
+    }
+
+    // Credential is required unless using fixed API key
+    if (!endpoint?.usesFixedApiKey && !selectedCredentialId) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing Configuration',
+        description: 'Please select a credential',
       })
       return
     }
@@ -581,7 +592,7 @@ export default function EndpointDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
+          <div className={`grid gap-4 ${endpoint.usesFixedApiKey ? 'grid-cols-1' : 'grid-cols-2'}`}>
             <div className="grid gap-2">
               <Label>Environment *</Label>
               <Select
@@ -601,25 +612,37 @@ export default function EndpointDashboard() {
               </Select>
             </div>
 
-            <div className="grid gap-2">
-              <Label>Credential *</Label>
-              <Select
-                value={selectedCredentialId}
-                onValueChange={setSelectedCredentialId}
-                disabled={!selectedEnvironmentId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select credential" />
-                </SelectTrigger>
-                <SelectContent>
-                  {credentials.map((cred) => (
-                    <SelectItem key={cred.id} value={cred.id}>
-                      {cred.orgName} ({cred.authType})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Hide credential dropdown for fixed API key endpoints */}
+            {!endpoint.usesFixedApiKey && (
+              <div className="grid gap-2">
+                <Label>Credential *</Label>
+                <Select
+                  value={selectedCredentialId}
+                  onValueChange={setSelectedCredentialId}
+                  disabled={!selectedEnvironmentId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select credential" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {credentials.map((cred) => (
+                      <SelectItem key={cred.id} value={cred.id}>
+                        {cred.orgName} ({cred.authType})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Show info about fixed API key authentication */}
+            {endpoint.usesFixedApiKey && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium">Note:</span> This endpoint uses a fixed API key for authentication. No credential selection required.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Alias URL Toggle (for API-key credentials only) */}

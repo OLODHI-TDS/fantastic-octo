@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db/prisma'
 import { executeTest } from '@/lib/test-engine/runner'
+import { API_ENDPOINTS } from '@/lib/api-endpoints'
 import crypto from 'crypto'
 
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'dev-key-change-in-production-32b'
@@ -50,11 +51,26 @@ export async function POST(
       )
     }
 
-    if (!test.credential.active) {
-      return NextResponse.json(
-        { error: 'Credential is not active' },
-        { status: 400 }
-      )
+    // Find endpoint configuration to check for fixed API key
+    const endpointConfig = API_ENDPOINTS.find(ep =>
+      test.endpoint.startsWith(ep.endpoint.split('{')[0])
+    )
+    const usesFixedApiKey = endpointConfig?.usesFixedApiKey === true
+
+    // Validate credential if not using fixed API key
+    if (!usesFixedApiKey) {
+      if (!test.credential) {
+        return NextResponse.json(
+          { error: 'Credential is required for this endpoint' },
+          { status: 400 }
+        )
+      }
+      if (!test.credential.active) {
+        return NextResponse.json(
+          { error: 'Credential is not active' },
+          { status: 400 }
+        )
+      }
     }
 
     // Parse test data
@@ -67,31 +83,44 @@ export async function POST(
       validations: test.validations ? JSON.parse(test.validations) : undefined,
     }
 
-    // Decrypt credential secrets based on auth type
-    const credentialData = {
-      instanceUrl: test.environment.instanceUrl,
-      orgName: test.credential.orgName,
-      regionScheme: test.credential.regionScheme,
-      memberId: test.credential.memberId,
-      branchId: test.credential.branchId,
-      authType: test.credential.authType as 'apikey' | 'oauth2',
-      apiKey: test.credential.authType === 'apikey' && test.credential.apiKey
-        ? decrypt(test.credential.apiKey)
-        : undefined,
-      clientId: test.credential.authType === 'oauth2' && test.credential.clientId
-        ? test.credential.clientId
-        : undefined,
-      clientSecret: test.credential.authType === 'oauth2' && test.credential.clientSecret
-        ? decrypt(test.credential.clientSecret)
-        : undefined,
-    }
+    let executionResult
 
-    // Execute the test
-    const executionResult = await executeTest({
-      test: testData,
-      instanceUrl: credentialData.instanceUrl,
-      credential: credentialData,
-    })
+    // Execute with fixed API key if endpoint requires it
+    if (usesFixedApiKey && endpointConfig?.fixedApiKeyHeader && endpointConfig?.fixedApiKeyValue) {
+      executionResult = await executeTest({
+        test: testData,
+        instanceUrl: test.environment.instanceUrl,
+        fixedApiKey: {
+          header: endpointConfig.fixedApiKeyHeader,
+          value: endpointConfig.fixedApiKeyValue,
+        },
+      })
+    } else {
+      // Standard credential-based execution
+      const credentialData = {
+        instanceUrl: test.environment.instanceUrl,
+        orgName: test.credential!.orgName,
+        regionScheme: test.credential!.regionScheme,
+        memberId: test.credential!.memberId,
+        branchId: test.credential!.branchId,
+        authType: test.credential!.authType as 'apikey' | 'oauth2',
+        apiKey: test.credential!.authType === 'apikey' && test.credential!.apiKey
+          ? decrypt(test.credential!.apiKey)
+          : undefined,
+        clientId: test.credential!.authType === 'oauth2' && test.credential!.clientId
+          ? test.credential!.clientId
+          : undefined,
+        clientSecret: test.credential!.authType === 'oauth2' && test.credential!.clientSecret
+          ? decrypt(test.credential!.clientSecret)
+          : undefined,
+      }
+
+      executionResult = await executeTest({
+        test: testData,
+        instanceUrl: credentialData.instanceUrl,
+        credential: credentialData,
+      })
+    }
 
     // Perform verification if enabled and test passed
     let verificationResults = null
