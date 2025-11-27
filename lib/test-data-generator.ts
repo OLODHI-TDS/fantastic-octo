@@ -326,6 +326,46 @@ export function generateRemoveTenantData() {
 }
 
 /**
+ * Generate NRLA ID in format RLA-XXXXX-XX
+ * RLA prefix, 5 digits, 2 random letters
+ */
+export function generateNRLAId(): string {
+  const digits = faker.string.numeric(5)
+  const letters = faker.string.alpha({ length: 2, casing: 'upper' })
+  return `RLA-${digits}-${letters}`
+}
+
+export function generateRegisterLandlordData() {
+  const isBusiness = faker.datatype.boolean()
+
+  const person: any = {
+    nrla_id: generateNRLAId(),
+    person_title: faker.person.prefix(),
+    person_firstname: faker.person.firstName(),
+    person_surname: faker.person.lastName(),
+    is_business: isBusiness.toString().toLowerCase(),
+    person_paon: faker.location.buildingNumber(),
+    person_street: faker.location.street(),
+    person_town: faker.location.city(),
+    person_postcode: generateUKPostcode(),
+    person_country: faker.helpers.arrayElement(['England', 'Wales', 'Scotland', 'Northern Ireland']),
+    person_phone: `07${faker.string.numeric(9)}`,
+    person_email: faker.internet.email(),
+    person_classification: 'Primary Landlord',
+  }
+
+  // Add optional saon (secondary address - flat number etc)
+  const saon = faker.datatype.boolean() ? `Flat ${faker.number.int({ min: 1, max: 20 })}` : null
+  if (saon) {
+    person.person_saon = saon
+  }
+
+  return {
+    people: person
+  }
+}
+
+/**
  * Generate test data based on endpoint ID
  */
 export function generateTestDataForEndpoint(endpointId: string): any {

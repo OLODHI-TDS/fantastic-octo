@@ -56,6 +56,7 @@ import { disputeStatusScenarios } from '@/lib/test-scenarios/dispute-status-scen
 import { transferDepositScenarios } from '@/lib/test-scenarios/transfer-deposit-scenarios'
 import { transferBranchDepositScenarios } from '@/lib/test-scenarios/transfer-branch-deposit-scenarios'
 import { allTenanciesScenarios } from '@/lib/test-scenarios/all-tenancies-scenarios'
+import { registerLandlordScenarios } from '@/lib/test-scenarios/register-landlord-scenarios'
 
 interface Environment {
   id: string
@@ -129,6 +130,8 @@ function getScenariosForEndpoint(endpointId: string): TestScenario[] {
       return transferBranchDepositScenarios
     case 'all-tenancies':
       return allTenanciesScenarios
+    case 'register-landlord':
+      return registerLandlordScenarios
     default:
       // Fallback to basic scenarios for endpoints without specific test scenarios
       return [

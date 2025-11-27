@@ -267,12 +267,24 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     category: 'Cart Management',
     expectedStatus: 200,
   },
+
+  // NRLA Client Registration
+  {
+    id: 'register-landlord',
+    name: 'Register Landlord (NRLA)',
+    description: 'Register a new landlord/client with NRLA membership details',
+    endpoint: '/services/apexrest/client/register',
+    method: 'POST',
+    category: 'Client Registration',
+    expectedStatus: 200,
+  },
 ]
 
 export const API_CATEGORIES = [
   'All',
   'Deposit Management',
   'Cart Management',
+  'Client Registration',
   'Search',
   'Documents',
   'Repayment',
