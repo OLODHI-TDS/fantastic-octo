@@ -387,6 +387,8 @@ export function generateTestDataForEndpoint(endpointId: string): any {
       return generateAddAdditionalTenantData()
     case 'remove-tenant':
       return generateRemoveTenantData()
+    case 'register-landlord':
+      return generateRegisterLandlordData()
     default:
       // For GET endpoints or endpoints without specific generators
       return null
