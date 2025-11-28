@@ -95,7 +95,12 @@ export async function GET(request: NextRequest) {
 
         if (isDepositCreation) {
           // For deposit creation, get DAN from response and tenants from tenancy.people
-          dan = response?.data?.dan || response?.dan || null
+          // Response structure varies - check multiple locations
+          console.log(`[Tenants] Deposit creation - Response keys:`, Object.keys(response || {}))
+          console.log(`[Tenants] Deposit creation - Response.data keys:`, response?.data ? Object.keys(response.data) : 'no data')
+          console.log(`[Tenants] Deposit creation - Full response:`, JSON.stringify(response).substring(0, 500))
+
+          dan = response?.data?.dan || response?.dan || response?.data?.DAN || response?.DAN || null
           people = requestBody?.tenancy?.people || []
           console.log(`[Tenants] Deposit creation - DAN from response: ${dan}, people count: ${people.length}`)
         } else if (isAddTenant) {
