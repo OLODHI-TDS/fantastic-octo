@@ -32,6 +32,9 @@ import {
   AlertCircle,
   FileJson,
   Sparkles,
+  Plus,
+  Trash2,
+  Users,
 } from 'lucide-react'
 import { getEndpointById, ApiEndpoint } from '@/lib/api-endpoints'
 import { generateTestDataForEndpoint } from '@/lib/test-data-generator'
@@ -170,6 +173,11 @@ export default function EndpointDashboard() {
   const [selectedTargetCredentialId, setSelectedTargetCredentialId] = useState('')
   const [targetCredentials, setTargetCredentials] = useState<Credential[]>([])
   const [useAliasUrl, setUseAliasUrl] = useState(false)
+  // Remove Tenant - multi-select state
+  const [addedTenants, setAddedTenants] = useState<any[]>([])
+  const [selectedTenantsToRemove, setSelectedTenantsToRemove] = useState<any[]>([])
+  const [currentTenantSelection, setCurrentTenantSelection] = useState('')
+  const [loadingAddedTenants, setLoadingAddedTenants] = useState(false)
 
   useEffect(() => {
     const ep = getEndpointById(endpointId)
@@ -229,6 +237,17 @@ export default function EndpointDashboard() {
       setSelectedTargetCredentialId('')
     }
   }, [endpointId, selectedEnvironmentId, credentials])
+
+  useEffect(() => {
+    // Fetch added tenants for remove-tenant endpoint
+    if (endpointId === 'remove-tenant' && selectedCredentialId) {
+      fetchAddedTenants()
+    } else {
+      setAddedTenants([])
+      setSelectedTenantsToRemove([])
+      setCurrentTenantSelection('')
+    }
+  }, [endpointId, selectedCredentialId])
 
   const fetchEnvironments = async () => {
     try {
@@ -362,6 +381,117 @@ export default function EndpointDashboard() {
         description: `DAN: ${dan} | Deposit Amount: £${deposit_amount}`,
       })
     }
+  }
+
+  // Remove Tenant - fetch added tenants
+  const fetchAddedTenants = async () => {
+    setLoadingAddedTenants(true)
+    try {
+      const response = await fetch(`/api/test-results/added-tenants?credentialId=${selectedCredentialId}&limit=50`)
+      if (response.ok) {
+        const data = await response.json()
+        setAddedTenants(data)
+      }
+    } catch (error) {
+      console.error('Error fetching added tenants:', error)
+    } finally {
+      setLoadingAddedTenants(false)
+    }
+  }
+
+  // Remove Tenant - add tenant to removal list
+  const addTenantToRemovalList = () => {
+    if (!currentTenantSelection) return
+
+    const tenant = addedTenants.find(t => t.id === currentTenantSelection)
+    if (tenant && !selectedTenantsToRemove.find(t => t.id === tenant.id)) {
+      const newSelected = [...selectedTenantsToRemove, tenant]
+      setSelectedTenantsToRemove(newSelected)
+      updateRemoveTenantRequestBody(newSelected)
+
+      // Set DAN from first tenant added
+      if (newSelected.length === 1) {
+        setPathParamValue(tenant.dan)
+      }
+
+      toast({
+        title: 'Tenant Added',
+        description: `${tenant.tenant.person_firstname} ${tenant.tenant.person_surname} added to removal list`,
+      })
+    }
+    setCurrentTenantSelection('')
+  }
+
+  // Remove Tenant - remove tenant from removal list
+  const removeTenantFromRemovalList = (tenantId: string) => {
+    const newSelected = selectedTenantsToRemove.filter(t => t.id !== tenantId)
+    setSelectedTenantsToRemove(newSelected)
+    updateRemoveTenantRequestBody(newSelected)
+
+    // Clear DAN if no tenants selected
+    if (newSelected.length === 0) {
+      setPathParamValue('')
+    }
+
+    toast({
+      title: 'Tenant Removed',
+      description: 'Tenant removed from removal list',
+    })
+  }
+
+  // Remove Tenant - clear all selected tenants
+  const clearAllSelectedTenants = () => {
+    setSelectedTenantsToRemove([])
+    setRequestBody('')
+    setPathParamValue('')
+    toast({
+      title: 'Cleared',
+      description: 'All tenants removed from selection',
+    })
+  }
+
+  // Remove Tenant - update request body in real-time
+  const updateRemoveTenantRequestBody = (tenants: any[]) => {
+    if (tenants.length === 0) {
+      setRequestBody('')
+      return
+    }
+
+    const payload = {
+      people: tenants.map(t => ({
+        person_classification: t.tenant.person_classification,
+        person_id: t.tenant.person_id,
+        person_reference: t.tenant.person_reference,
+        person_title: t.tenant.person_title,
+        person_firstname: t.tenant.person_firstname,
+        person_surname: t.tenant.person_surname,
+        is_business: t.tenant.is_business,
+        person_paon: t.tenant.person_paon,
+        person_saon: t.tenant.person_saon,
+        person_street: t.tenant.person_street,
+        person_locality: t.tenant.person_locality,
+        person_town: t.tenant.person_town,
+        person_postcode: t.tenant.person_postcode,
+        person_country: t.tenant.person_country,
+        person_phone: t.tenant.person_phone,
+        person_email: t.tenant.person_email,
+        person_mobile: t.tenant.person_mobile,
+        business_name: t.tenant.business_name,
+      }))
+    }
+
+    // Remove undefined/null fields
+    payload.people = payload.people.map(person => {
+      const cleaned: any = {}
+      for (const [key, value] of Object.entries(person)) {
+        if (value !== undefined && value !== null && value !== '') {
+          cleaned[key] = value
+        }
+      }
+      return cleaned
+    })
+
+    setRequestBody(JSON.stringify(payload, null, 2))
   }
 
   const generateTestData = () => {
@@ -999,6 +1129,151 @@ export default function EndpointDashboard() {
               >
                 Create Template
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Remove Tenant - Multi-Select Helper */}
+      {endpointId === 'remove-tenant' && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Select Tenants to Remove
+            </CardTitle>
+            <CardDescription>
+              Select tenants that were previously added to deposits. You can add multiple tenants to remove in a single request.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              {/* Tenant Selection Dropdown + Add Button */}
+              <div className="grid gap-2">
+                <Label>Previously Added Tenants</Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={currentTenantSelection}
+                    onValueChange={setCurrentTenantSelection}
+                    disabled={!selectedCredentialId || loadingAddedTenants}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder={loadingAddedTenants ? 'Loading...' : 'Select a tenant...'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {addedTenants
+                        .filter(t => !selectedTenantsToRemove.find(s => s.id === t.id))
+                        .map((tenantRecord) => (
+                          <SelectItem key={tenantRecord.id} value={tenantRecord.id}>
+                            {tenantRecord.dan} - {tenantRecord.tenant.person_firstname} {tenantRecord.tenant.person_surname} ({tenantRecord.tenant.person_email || tenantRecord.tenant.person_mobile || 'No contact'})
+                          </SelectItem>
+                        ))}
+                      {addedTenants.length === 0 && !loadingAddedTenants && (
+                        <SelectItem value="none" disabled>
+                          No added tenants found
+                        </SelectItem>
+                      )}
+                      {addedTenants.filter(t => !selectedTenantsToRemove.find(s => s.id === t.id)).length === 0 && addedTenants.length > 0 && (
+                        <SelectItem value="all-selected" disabled>
+                          All tenants already selected
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    onClick={addTenantToRemovalList}
+                    disabled={!currentTenantSelection}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Select a tenant from the dropdown and click "Add" to include them in the removal request.
+                </p>
+              </div>
+
+              {/* Selected Tenants List */}
+              {selectedTenantsToRemove.length > 0 && (
+                <div className="grid gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Selected Tenants ({selectedTenantsToRemove.length}):</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearAllSelectedTenants}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Clear All
+                    </Button>
+                  </div>
+                  <div className="border rounded-lg divide-y">
+                    {selectedTenantsToRemove.map((tenantRecord) => (
+                      <div
+                        key={tenantRecord.id}
+                        className="flex items-center justify-between p-3 hover:bg-muted/50"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="font-mono text-xs">
+                              {tenantRecord.dan}
+                            </Badge>
+                            <span className="font-medium truncate">
+                              {tenantRecord.tenant.person_firstname} {tenantRecord.tenant.person_surname}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate mt-1">
+                            {tenantRecord.tenant.person_email || tenantRecord.tenant.person_mobile || tenantRecord.tenant.person_phone || 'No contact info'}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeTenantFromRemovalList(tenantRecord.id)}
+                          className="text-destructive hover:text-destructive ml-2"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* DAN Warning if mixed */}
+                  {selectedTenantsToRemove.length > 1 && (
+                    (() => {
+                      const uniqueDans = [...new Set(selectedTenantsToRemove.map(t => t.dan))]
+                      if (uniqueDans.length > 1) {
+                        return (
+                          <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium text-yellow-800">Multiple DANs Selected</p>
+                              <p className="text-xs text-yellow-700">
+                                You have selected tenants from different deposits ({uniqueDans.join(', ')}).
+                                The API may only process tenants from a single DAN. Consider removing tenants from different deposits.
+                              </p>
+                            </div>
+                          </div>
+                        )
+                      }
+                      return null
+                    })()
+                  )}
+                </div>
+              )}
+
+              {/* Empty State */}
+              {selectedTenantsToRemove.length === 0 && (
+                <div className="text-center py-6 text-muted-foreground border rounded-lg border-dashed">
+                  <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No tenants selected</p>
+                  <p className="text-xs">Select tenants from the dropdown above to add them to the removal list</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
