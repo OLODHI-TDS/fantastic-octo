@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     )
 
     // Find successful tests from both:
-    // 1. Deposit Creation: /services/apexrest/nrla/deposit/create
+    // 1. Deposit Creation: /services/apexrest/depositcreation OR /services/apexrest/nrla/deposit/create
     // 2. Add Additional Tenant: /services/apexrest/nrla/tenant/add/{DAN}
     const results = await prisma.testResult.findMany({
       where: {
@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
           gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
         },
         OR: [
+          { test: { endpoint: { contains: 'depositcreation' } } },
           { test: { endpoint: { contains: 'deposit/create' } } },
           { test: { endpoint: { contains: 'tenant/add' } } }
         ]
@@ -84,7 +85,7 @@ export async function GET(request: NextRequest) {
         const requestBody = request.body
         const response = JSON.parse(result.response)
 
-        const isDepositCreation = result.test.endpoint.includes('deposit/create')
+        const isDepositCreation = result.test.endpoint.includes('depositcreation') || result.test.endpoint.includes('deposit/create')
         const isAddTenant = result.test.endpoint.includes('tenant/add')
 
         console.log(`[Tenants] Processing ${isDepositCreation ? 'DEPOSIT CREATION' : 'ADD TENANT'}: ${result.test.endpoint}`)
