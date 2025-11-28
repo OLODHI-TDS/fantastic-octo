@@ -312,17 +312,49 @@ export function generateRemoveTenantData() {
   const numTenants = faker.number.int({ min: 1, max: 2 })
   const people = []
 
-  // Generate tenant(s) to remove
+  // Generate tenant(s) to remove - now requires full tenant details like Add Tenant
+  // Mandatory fields: person_classification, person_firstname, person_surname, and one of person_email/person_mobile/person_phone
   for (let i = 0; i < numTenants; i++) {
-    people.push({
+    const isBusiness = faker.datatype.boolean()
+    // Generate UK landline number (01 or 02 prefix)
+    const landlinePrefix = faker.helpers.arrayElement(['01', '02'])
+    const landlineNumber = `${landlinePrefix}${faker.string.numeric(9)}`
+
+    const person: any = {
+      person_classification: 'Tenant',
       person_id: `TEN${faker.string.alphanumeric(8).toUpperCase()}`,
-      delete: true
-    })
+      person_reference: `TENREF${faker.string.alphanumeric(6).toUpperCase()}`,
+      person_title: faker.person.prefix(),
+      person_firstname: faker.person.firstName(),
+      person_surname: faker.person.lastName(),
+      is_business: isBusiness.toString().toUpperCase(),
+      person_paon: faker.location.buildingNumber(),
+      person_street: faker.location.street(),
+      person_locality: faker.location.county(),
+      person_town: faker.location.city(),
+      person_postcode: generateUKPostcode(),
+      person_country: 'United Kingdom',
+      person_phone: landlineNumber,
+      person_email: faker.internet.email(),
+      person_mobile: `07${faker.string.numeric(9)}`,
+    }
+
+    // Add optional fields
+    if (isBusiness) {
+      person.business_name = faker.company.name()
+    }
+
+    const saon = faker.datatype.boolean() ? `Flat ${faker.number.int({ min: 1, max: 20 })}` : null
+    if (saon) {
+      person.person_saon = saon
+    }
+
+    people.push(person)
   }
 
-  return {
+  return removeEmptyFields({
     people
-  }
+  })
 }
 
 /**
