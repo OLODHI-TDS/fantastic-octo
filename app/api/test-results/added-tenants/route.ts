@@ -19,23 +19,6 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    console.log(`[Tenants] Searching for credentialId: ${credentialId}`)
-
-    // Debug: Check what test results exist for this credential (any endpoint)
-    const debugResults = await prisma.testResult.findMany({
-      where: { credentialId },
-      include: { test: { select: { endpoint: true } } },
-      orderBy: { executedAt: 'desc' },
-      take: 10
-    })
-    console.log(`[Tenants] DEBUG - Recent results for this credential:`,
-      debugResults.map(r => ({
-        endpoint: r.test.endpoint,
-        status: r.status,
-        executedAt: r.executedAt
-      }))
-    )
-
     // Find successful tests from both:
     // 1. Deposit Creation: /services/apexrest/depositcreation OR /services/apexrest/nrla/deposit/create
     // 2. Add Additional Tenant: /services/apexrest/nrla/tenant/add/{DAN}
@@ -74,7 +57,6 @@ export async function GET(request: NextRequest) {
       take: limit
     })
 
-    console.log(`[Tenants] Found ${results.length} test results (deposit creation + add tenant)`)
 
     // Process results to extract tenant details
     const allTenants: any[] = []
@@ -88,36 +70,21 @@ export async function GET(request: NextRequest) {
         const isDepositCreation = result.test.endpoint.includes('depositcreation') || result.test.endpoint.includes('deposit/create')
         const isAddTenant = result.test.endpoint.includes('tenant/add')
 
-        console.log(`[Tenants] Processing ${isDepositCreation ? 'DEPOSIT CREATION' : 'ADD TENANT'}: ${result.test.endpoint}`)
-
         let dan: string | null = null
         let people: any[] = []
 
         if (isDepositCreation) {
-          // For deposit creation, get DAN from response and tenants from tenancy.people
-          // Response structure varies - check multiple locations
-          console.log(`[Tenants] Deposit creation - Response keys:`, Object.keys(response || {}))
-          console.log(`[Tenants] Deposit creation - Response.data keys:`, response?.data ? Object.keys(response.data) : 'no data')
-          console.log(`[Tenants] Deposit creation - Full response:`, JSON.stringify(response).substring(0, 500))
-
-          dan = response?.data?.dan || response?.dan || response?.data?.DAN || response?.DAN || null
+          // For deposit creation, get DAN from response (uppercase DAN) and tenants from tenancy.people
+          dan = response?.data?.DAN || response?.data?.dan || response?.DAN || response?.dan || null
           people = requestBody?.tenancy?.people || []
-          console.log(`[Tenants] Deposit creation - DAN from response: ${dan}, people count: ${people.length}`)
         } else if (isAddTenant) {
           // For add tenant, get DAN from endpoint and tenants from people array
           const danMatch = result.test.endpoint.match(/(EWCS?|EWI|NI|SDS)\d+/i)
           dan = danMatch ? danMatch[0] : null
           people = requestBody?.people || []
-          console.log(`[Tenants] Add tenant - DAN from endpoint: ${dan}, people count: ${people.length}`)
         }
 
-        if (!dan) {
-          console.log(`[Tenants] Skipping - could not determine DAN`)
-          continue
-        }
-
-        if (!Array.isArray(people) || people.length === 0) {
-          console.log(`[Tenants] Skipping - no people array`)
+        if (!dan || !Array.isArray(people) || people.length === 0) {
           continue
         }
 
@@ -167,8 +134,6 @@ export async function GET(request: NextRequest) {
         continue
       }
     }
-
-    console.log(`[Tenants] Total tenants found: ${allTenants.length}`)
 
     return NextResponse.json(allTenants)
   } catch (error) {
