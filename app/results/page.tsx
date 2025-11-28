@@ -70,7 +70,7 @@ interface TestResult {
     authType: string
     memberId: string
     branchId: string
-  }
+  } | null
   status: string
   manualStatus: string | null
   statusCode: number
@@ -128,7 +128,7 @@ function SortableTestItem({ id, result, index }: SortableTestItemProps) {
           <span className="text-sm font-medium truncate">{result.test.name}</span>
         </div>
         <div className="text-xs text-muted-foreground mt-1">
-          {result.test.method} • {result.credential.orgName}
+          {result.test.method} • {result.credential?.orgName || 'Fixed API Key'}
         </div>
       </div>
     </div>
@@ -884,9 +884,9 @@ export default function ResultsPage() {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <div>{result.credential.orgName}</div>
+                        <div>{result.credential?.orgName || 'Fixed API Key'}</div>
                         <div className="text-xs text-muted-foreground">
-                          {result.credential.authType}
+                          {result.credential?.authType || 'N/A'}
                         </div>
                       </div>
                     </TableCell>
@@ -1191,9 +1191,11 @@ export default function ResultsPage() {
                       <div>
                         <Label className="text-muted-foreground">Credential</Label>
                         <div className="text-sm mt-1">
-                          <div className="font-medium">{selectedResult.credential.orgName}</div>
+                          <div className="font-medium">{selectedResult.credential?.orgName || 'Fixed API Key'}</div>
                           <div className="text-muted-foreground">
-                            {selectedResult.credential.authType} • Member: {selectedResult.credential.memberId} • Branch: {selectedResult.credential.branchId}
+                            {selectedResult.credential
+                              ? `${selectedResult.credential.authType} • Member: ${selectedResult.credential.memberId || 'N/A'} • Branch: ${selectedResult.credential.branchId || 'N/A'}`
+                              : 'Uses environment-level fixed API key authentication'}
                           </div>
                         </div>
                       </div>
