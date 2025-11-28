@@ -19,6 +19,23 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    console.log(`[Tenants] Searching for credentialId: ${credentialId}`)
+
+    // Debug: Check what test results exist for this credential (any endpoint)
+    const debugResults = await prisma.testResult.findMany({
+      where: { credentialId },
+      include: { test: { select: { endpoint: true } } },
+      orderBy: { executedAt: 'desc' },
+      take: 10
+    })
+    console.log(`[Tenants] DEBUG - Recent results for this credential:`,
+      debugResults.map(r => ({
+        endpoint: r.test.endpoint,
+        status: r.status,
+        executedAt: r.executedAt
+      }))
+    )
+
     // Find successful tests from both:
     // 1. Deposit Creation: /services/apexrest/nrla/deposit/create
     // 2. Add Additional Tenant: /services/apexrest/nrla/tenant/add/{DAN}
