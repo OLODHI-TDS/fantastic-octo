@@ -80,18 +80,27 @@ export async function GET(request: NextRequest) {
           continue
         }
 
+        console.log(`[Added Tenants] People array length: ${requestBody.people.length}`)
+        console.log(`[Added Tenants] People classifications:`, requestBody.people.map((p: any) => p.person_classification))
+
         // Extract DAN from endpoint (e.g., /services/apexrest/nrla/tenant/add/EWI01261682)
-        const danMatch = result.test.endpoint.match(/(EWC|EWI|NI|SDS)\d+/i)
+        // Also handle EWCS format
+        const danMatch = result.test.endpoint.match(/(EWCS?|EWI|NI|SDS)\d+/i)
         const dan = danMatch ? danMatch[0] : null
 
         if (!dan) {
+          console.log(`[Added Tenants] Could not extract DAN from endpoint: ${result.test.endpoint}`)
           continue
         }
 
+        console.log(`[Added Tenants] Extracted DAN: ${dan}`)
+
         // Each person in the people array is a tenant that was added
         for (const tenant of requestBody.people) {
-          // Only include tenants (not landlords)
-          if (tenant.person_classification !== 'Tenant') {
+          // Only include tenants (not landlords) - case insensitive comparison
+          const classification = (tenant.person_classification || '').toLowerCase()
+          if (classification !== 'tenant') {
+            console.log(`[Added Tenants] Skipping person with classification: ${tenant.person_classification}`)
             continue
           }
 
