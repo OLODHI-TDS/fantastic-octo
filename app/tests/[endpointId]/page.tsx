@@ -178,6 +178,7 @@ export default function EndpointDashboard() {
   const [selectedTenantsToRemove, setSelectedTenantsToRemove] = useState<any[]>([])
   const [currentTenantSelection, setCurrentTenantSelection] = useState('')
   const [loadingAddedTenants, setLoadingAddedTenants] = useState(false)
+  const [selectedRemoveTenantDan, setSelectedRemoveTenantDan] = useState('')
 
   useEffect(() => {
     const ep = getEndpointById(endpointId)
@@ -246,6 +247,7 @@ export default function EndpointDashboard() {
       setAddedTenants([])
       setSelectedTenantsToRemove([])
       setCurrentTenantSelection('')
+      setSelectedRemoveTenantDan('')
     }
   }, [endpointId, selectedCredentialId])
 
@@ -399,6 +401,16 @@ export default function EndpointDashboard() {
     }
   }
 
+  // Remove Tenant - handle DAN selection
+  const handleRemoveTenantDanChange = (dan: string) => {
+    setSelectedRemoveTenantDan(dan)
+    setPathParamValue(dan)
+    // Clear tenant selection and selected tenants when DAN changes
+    setCurrentTenantSelection('')
+    setSelectedTenantsToRemove([])
+    setRequestBody('')
+  }
+
   // Remove Tenant - add tenant to removal list
   const addTenantToRemovalList = () => {
     if (!currentTenantSelection) return
@@ -408,11 +420,6 @@ export default function EndpointDashboard() {
       const newSelected = [...selectedTenantsToRemove, tenant]
       setSelectedTenantsToRemove(newSelected)
       updateRemoveTenantRequestBody(newSelected)
-
-      // Set DAN from first tenant added
-      if (newSelected.length === 1) {
-        setPathParamValue(tenant.dan)
-      }
 
       toast({
         title: 'Tenant Added',
@@ -428,10 +435,7 @@ export default function EndpointDashboard() {
     setSelectedTenantsToRemove(newSelected)
     updateRemoveTenantRequestBody(newSelected)
 
-    // Clear DAN if no tenants selected
-    if (newSelected.length === 0) {
-      setPathParamValue('')
-    }
+    // Note: Don't clear DAN when tenants list becomes empty - user may want to add more tenants from same DAN
 
     toast({
       title: 'Tenant Removed',
@@ -443,7 +447,7 @@ export default function EndpointDashboard() {
   const clearAllSelectedTenants = () => {
     setSelectedTenantsToRemove([])
     setRequestBody('')
-    setPathParamValue('')
+    // Don't clear DAN - user may want to select different tenants from same DAN
     toast({
       title: 'Cleared',
       description: 'All tenants removed from selection',
@@ -1148,51 +1152,83 @@ export default function EndpointDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
-              {/* Tenant Selection Dropdown + Add Button */}
+              {/* Step 1: DAN Selection Dropdown */}
               <div className="grid gap-2">
-                <Label>Previously Added Tenants</Label>
-                <div className="flex gap-2">
-                  <Select
-                    value={currentTenantSelection}
-                    onValueChange={setCurrentTenantSelection}
-                    disabled={!selectedCredentialId || loadingAddedTenants}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder={loadingAddedTenants ? 'Loading...' : 'Select a tenant...'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {addedTenants
-                        .filter(t => !selectedTenantsToRemove.find(s => s.id === t.id))
-                        .map((tenantRecord) => (
-                          <SelectItem key={tenantRecord.id} value={tenantRecord.id}>
-                            {tenantRecord.dan} - {tenantRecord.tenant.person_firstname} {tenantRecord.tenant.person_surname} ({tenantRecord.tenant.person_email || tenantRecord.tenant.person_mobile || 'No contact'})
-                          </SelectItem>
-                        ))}
-                      {addedTenants.length === 0 && !loadingAddedTenants && (
-                        <SelectItem value="none" disabled>
-                          No added tenants found
+                <Label>Step 1: Select Deposit (DAN)</Label>
+                <Select
+                  value={selectedRemoveTenantDan}
+                  onValueChange={handleRemoveTenantDanChange}
+                  disabled={!selectedCredentialId || loadingAddedTenants}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={loadingAddedTenants ? 'Loading...' : 'Select a DAN...'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* Get unique DANs from added tenants */}
+                    {[...new Set(addedTenants.map(t => t.dan))].map((dan) => {
+                      const tenantsForDan = addedTenants.filter(t => t.dan === dan)
+                      return (
+                        <SelectItem key={dan} value={dan}>
+                          {dan} ({tenantsForDan.length} tenant{tenantsForDan.length !== 1 ? 's' : ''} added)
                         </SelectItem>
-                      )}
-                      {addedTenants.filter(t => !selectedTenantsToRemove.find(s => s.id === t.id)).length === 0 && addedTenants.length > 0 && (
-                        <SelectItem value="all-selected" disabled>
-                          All tenants already selected
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    type="button"
-                    onClick={addTenantToRemovalList}
-                    disabled={!currentTenantSelection}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add
-                  </Button>
-                </div>
+                      )
+                    })}
+                    {addedTenants.length === 0 && !loadingAddedTenants && (
+                      <SelectItem value="none" disabled>
+                        No deposits with added tenants found
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">
-                  Select a tenant from the dropdown and click "Add" to include them in the removal request.
+                  Select the deposit (DAN) from which you want to remove tenants.
                 </p>
               </div>
+
+              {/* Step 2: Tenant Selection Dropdown + Add Button */}
+              {selectedRemoveTenantDan && (
+                <div className="grid gap-2">
+                  <Label>Step 2: Select Tenant(s) to Remove</Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={currentTenantSelection}
+                      onValueChange={setCurrentTenantSelection}
+                      disabled={!selectedRemoveTenantDan}
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select a tenant..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {addedTenants
+                          .filter(t => t.dan === selectedRemoveTenantDan && !selectedTenantsToRemove.find(s => s.id === t.id))
+                          .map((tenantRecord) => (
+                            <SelectItem key={tenantRecord.id} value={tenantRecord.id}>
+                              {tenantRecord.tenant.person_firstname} {tenantRecord.tenant.person_surname} ({tenantRecord.tenant.person_email || tenantRecord.tenant.person_mobile || 'No contact'})
+                            </SelectItem>
+                          ))}
+                        {addedTenants.filter(t => t.dan === selectedRemoveTenantDan && !selectedTenantsToRemove.find(s => s.id === t.id)).length === 0 && (
+                          <SelectItem value="all-selected" disabled>
+                            {addedTenants.filter(t => t.dan === selectedRemoveTenantDan).length === 0
+                              ? 'No tenants found for this DAN'
+                              : 'All tenants already selected'}
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      onClick={addTenantToRemovalList}
+                      disabled={!currentTenantSelection}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Select a tenant and click "Add" to include them in the removal request. You can add multiple tenants.
+                  </p>
+                </div>
+              )}
 
               {/* Selected Tenants List */}
               {selectedTenantsToRemove.length > 0 && (
@@ -1217,14 +1253,9 @@ export default function EndpointDashboard() {
                         className="flex items-center justify-between p-3 hover:bg-muted/50"
                       >
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="font-mono text-xs">
-                              {tenantRecord.dan}
-                            </Badge>
-                            <span className="font-medium truncate">
-                              {tenantRecord.tenant.person_firstname} {tenantRecord.tenant.person_surname}
-                            </span>
-                          </div>
+                          <span className="font-medium truncate">
+                            {tenantRecord.tenant.person_firstname} {tenantRecord.tenant.person_surname}
+                          </span>
                           <p className="text-xs text-muted-foreground truncate mt-1">
                             {tenantRecord.tenant.person_email || tenantRecord.tenant.person_mobile || tenantRecord.tenant.person_phone || 'No contact info'}
                           </p>
@@ -1241,28 +1272,6 @@ export default function EndpointDashboard() {
                       </div>
                     ))}
                   </div>
-
-                  {/* DAN Warning if mixed */}
-                  {selectedTenantsToRemove.length > 1 && (
-                    (() => {
-                      const uniqueDans = [...new Set(selectedTenantsToRemove.map(t => t.dan))]
-                      if (uniqueDans.length > 1) {
-                        return (
-                          <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                            <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
-                            <div>
-                              <p className="text-sm font-medium text-yellow-800">Multiple DANs Selected</p>
-                              <p className="text-xs text-yellow-700">
-                                You have selected tenants from different deposits ({uniqueDans.join(', ')}).
-                                The API may only process tenants from a single DAN. Consider removing tenants from different deposits.
-                              </p>
-                            </div>
-                          </div>
-                        )
-                      }
-                      return null
-                    })()
-                  )}
                 </div>
               )}
 
