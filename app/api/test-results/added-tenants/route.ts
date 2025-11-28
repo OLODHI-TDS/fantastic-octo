@@ -20,10 +20,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Build where clause - find successful Add Tenant tests
+    // The endpoint format is: /services/apexrest/nrla/tenant/add/{DAN}
     const where: any = {
       test: {
         endpoint: {
-          contains: '/tenant/add/'
+          contains: 'tenant/add'
         }
       },
       credentialId,
@@ -33,6 +34,8 @@ export async function GET(request: NextRequest) {
         gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       }
     }
+
+    console.log('[Added Tenants] Query where clause:', JSON.stringify(where, null, 2))
 
     const results = await prisma.testResult.findMany({
       where,
@@ -58,6 +61,8 @@ export async function GET(request: NextRequest) {
       take: limit
     })
 
+    console.log(`[Added Tenants] Found ${results.length} test results matching query`)
+
     // Process results to extract tenant details
     const addedTenants: any[] = []
 
@@ -67,7 +72,11 @@ export async function GET(request: NextRequest) {
         const request = JSON.parse(result.request)
         const requestBody = request.body
 
+        console.log(`[Added Tenants] Processing result ${result.id}, endpoint: ${result.test.endpoint}`)
+        console.log(`[Added Tenants] Request body keys:`, requestBody ? Object.keys(requestBody) : 'null')
+
         if (!requestBody || !requestBody.people || !Array.isArray(requestBody.people)) {
+          console.log(`[Added Tenants] Skipping result ${result.id}: No people array in request body`)
           continue
         }
 
