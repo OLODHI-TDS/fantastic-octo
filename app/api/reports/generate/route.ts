@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db/prisma'
 import { generateTestReportPDF } from '@/lib/pdf/generator'
+import { auth } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const { title, description, resultIds, groupingType, groupingValue } = body
 
@@ -17,10 +23,11 @@ export async function POST(request: NextRequest) {
 
     console.log(`Generating report for ${resultIds.length} test results...`)
 
-    // Fetch test results from database with all related data
+    // Fetch test results from database with all related data (verify ownership)
     const fetchedResults = await prisma.testResult.findMany({
       where: {
         id: { in: resultIds },
+        test: { environment: { userId: session.user.id } },
       },
       include: {
         test: {
@@ -106,6 +113,7 @@ export async function POST(request: NextRequest) {
         errorTests,
         avgResponseTime,
         pdfPath: pdfResult.pdfPath!,
+        userId: session.user.id,
       },
     })
 

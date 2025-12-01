@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db/prisma'
 import { UpdateEnvironmentSchema } from '@/types/environment'
 import { encrypt, decrypt } from '@/lib/salesforce/oauth'
+import { auth } from '@/lib/auth'
 
 // GET /api/environments/[id] - Get single environment
 export async function GET(
@@ -9,9 +10,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
-    const environment = await prisma.environment.findUnique({
-      where: { id },
+    const environment = await prisma.environment.findFirst({
+      where: { id, userId: session.user.id },
       include: {
         credentials: {
           select: {
@@ -64,7 +70,21 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
+
+    // Verify ownership
+    const existing = await prisma.environment.findFirst({
+      where: { id, userId: session.user.id },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Environment not found' }, { status: 404 })
+    }
+
     const body = await request.json()
     const validatedData = UpdateEnvironmentSchema.parse({ ...body, id })
 
@@ -147,7 +167,21 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
+
+    // Verify ownership before deleting
+    const existing = await prisma.environment.findFirst({
+      where: { id, userId: session.user.id },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Environment not found' }, { status: 404 })
+    }
+
     await prisma.environment.delete({
       where: { id },
     })

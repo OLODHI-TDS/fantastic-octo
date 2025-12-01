@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db/prisma'
 import { UpdateCredentialSchema } from '@/types/credential'
 import crypto from 'crypto'
+import { auth } from '@/lib/auth'
 
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'dev-key-change-in-production-32b'
 const ALGORITHM = 'aes-256-cbc'
@@ -30,9 +31,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
-    const credential = await prisma.credential.findUnique({
-      where: { id },
+    const credential = await prisma.credential.findFirst({
+      where: { id, environment: { userId: session.user.id } },
       include: {
         environment: {
           select: {
@@ -75,7 +81,21 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
+
+    // Verify ownership
+    const existing = await prisma.credential.findFirst({
+      where: { id, environment: { userId: session.user.id } },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Credential not found' }, { status: 404 })
+    }
+
     const body = await request.json()
     const validatedData = UpdateCredentialSchema.parse({ ...body, id })
 
@@ -146,7 +166,21 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
+
+    // Verify ownership before deleting
+    const existing = await prisma.credential.findFirst({
+      where: { id, environment: { userId: session.user.id } },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Credential not found' }, { status: 404 })
+    }
+
     await prisma.credential.delete({
       where: { id },
     })

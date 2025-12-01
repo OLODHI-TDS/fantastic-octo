@@ -3,6 +3,7 @@ import prisma from '@/lib/db/prisma'
 import { executeTest } from '@/lib/test-engine/runner'
 import { API_ENDPOINTS } from '@/lib/api-endpoints'
 import crypto from 'crypto'
+import { auth } from '@/lib/auth'
 
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'dev-key-change-in-production-32b'
 const ALGORITHM = 'aes-256-cbc'
@@ -26,11 +27,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
 
-    // Fetch the test with its environment and credential
-    const test = await prisma.test.findUnique({
-      where: { id },
+    // Fetch the test with its environment and credential (verify user ownership)
+    const test = await prisma.test.findFirst({
+      where: { id, environment: { userId: session.user.id } },
       include: {
         environment: true,
         credential: true,

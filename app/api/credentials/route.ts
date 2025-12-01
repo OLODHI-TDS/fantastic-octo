@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db/prisma'
 import { CreateCredentialSchema } from '@/types/credential'
 import crypto from 'crypto'
+import { auth } from '@/lib/auth'
 
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'dev-key-change-in-production-32b'
 const ALGORITHM = 'aes-256-cbc'
@@ -27,11 +28,19 @@ function decrypt(text: string): string {
 // GET /api/credentials - List all credentials (optionally filter by environment)
 export async function GET(request: NextRequest) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const searchParams = request.nextUrl.searchParams
     const environmentId = searchParams.get('environmentId')
 
     const credentials = await prisma.credential.findMany({
-      where: environmentId ? { environmentId } : undefined,
+      where: {
+        ...(environmentId ? { environmentId } : {}),
+        environment: { userId: session.user.id },
+      },
       include: {
         environment: {
           select: {
@@ -70,8 +79,21 @@ export async function GET(request: NextRequest) {
 // POST /api/credentials - Create new credential
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const validatedData = CreateCredentialSchema.parse(body)
+
+    // Verify the environment belongs to the user
+    const environment = await prisma.environment.findFirst({
+      where: { id: validatedData.environmentId, userId: session.user.id },
+    })
+    if (!environment) {
+      return NextResponse.json({ error: 'Environment not found' }, { status: 404 })
+    }
 
     // Prepare data for database, encrypting secrets based on auth type
     const dbData: any = { ...validatedData }

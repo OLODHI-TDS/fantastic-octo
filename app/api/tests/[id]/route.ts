@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db/prisma'
 import { UpdateTestSchema } from '@/types/test'
+import { auth } from '@/lib/auth'
 
 // GET /api/tests/[id] - Get single test
 export async function GET(
@@ -8,9 +9,14 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
-    const test = await prisma.test.findUnique({
-      where: { id },
+    const test = await prisma.test.findFirst({
+      where: { id, environment: { userId: session.user.id } },
       include: {
         environment: {
           select: {
@@ -50,7 +56,21 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
+
+    // Verify ownership
+    const existing = await prisma.test.findFirst({
+      where: { id, environment: { userId: session.user.id } },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Test not found' }, { status: 404 })
+    }
+
     const body = await request.json()
     const validatedData = UpdateTestSchema.parse({ ...body, id })
 
@@ -118,7 +138,21 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
+
+    // Verify ownership before deleting
+    const existing = await prisma.test.findFirst({
+      where: { id, environment: { userId: session.user.id } },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Test not found' }, { status: 404 })
+    }
+
     await prisma.test.delete({
       where: { id },
     })

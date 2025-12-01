@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db/prisma'
 import { CreateTestSchema } from '@/types/test'
+import { auth } from '@/lib/auth'
 
 // GET /api/tests - List all tests (optionally filter by environment)
 export async function GET(request: NextRequest) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const searchParams = request.nextUrl.searchParams
     const environmentId = searchParams.get('environmentId')
 
     const tests = await prisma.test.findMany({
-      where: environmentId ? { environmentId } : undefined,
+      where: {
+        ...(environmentId ? { environmentId } : {}),
+        environment: { userId: session.user.id },
+      },
       include: {
         environment: {
           select: {
@@ -55,8 +64,21 @@ export async function GET(request: NextRequest) {
 // POST /api/tests - Create new test
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const validatedData = CreateTestSchema.parse(body)
+
+    // Verify the environment belongs to the user
+    const environment = await prisma.environment.findFirst({
+      where: { id: validatedData.environmentId, userId: session.user.id },
+    })
+    if (!environment) {
+      return NextResponse.json({ error: 'Environment not found' }, { status: 404 })
+    }
 
     // Handle empty credentialId (for fixed API key endpoints)
     const credentialId = validatedData.credentialId && validatedData.credentialId.trim() !== ''

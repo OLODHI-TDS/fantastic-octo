@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db/prisma'
+import { auth } from '@/lib/auth'
 
 // PATCH /api/results/[id] - Update test result (e.g., notes)
 export async function PATCH(
@@ -7,7 +8,21 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
+
+    // Verify ownership
+    const existing = await prisma.testResult.findFirst({
+      where: { id, test: { environment: { userId: session.user.id } } },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Test result not found' }, { status: 404 })
+    }
+
     const body = await request.json()
     const { notes } = body
 
@@ -54,7 +69,20 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
+
+    // Verify ownership before deleting
+    const existing = await prisma.testResult.findFirst({
+      where: { id, test: { environment: { userId: session.user.id } } },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: 'Test result not found' }, { status: 404 })
+    }
 
     console.log(`Deleting test result: ${id}`)
 

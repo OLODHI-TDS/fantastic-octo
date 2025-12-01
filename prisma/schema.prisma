@@ -3,12 +3,23 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../lib/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// User model for authentication
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  password     String        // Hashed password
+  name         String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  environments Environment[]
+  testReports  TestReport[]
 }
 
 // Salesforce Environment configuration
@@ -29,6 +40,10 @@ model Environment {
   sfConnectedAppClientSecret String?   // Encrypted Consumer Secret from Connected App
   sfRefreshToken             String?   // Encrypted refresh token for automatic token renewal
   sfTokenExpiresAt           DateTime? // When the current access token expires
+
+  // User ownership
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -119,5 +134,8 @@ model TestReport {
   avgResponseTime Int?    // Average response time across all tests
   pdfPath        String   // URL to generated PDF file (Vercel Blob Storage)
   generatedAt    DateTime @default(now())
-  generatedBy    String?  // Future: user identifier
+
+  // User ownership
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

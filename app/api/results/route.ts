@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db/prisma'
+import { auth } from '@/lib/auth'
 
 // GET /api/results - List test results with filtering
 export async function GET(request: NextRequest) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const searchParams = request.nextUrl.searchParams
     const testId = searchParams.get('testId')
     const environmentId = searchParams.get('environmentId')
@@ -15,6 +21,7 @@ export async function GET(request: NextRequest) {
         ...(testId && { testId }),
         ...(environmentId && { test: { environmentId } }),
         ...(status && { status }),
+        test: { environment: { userId: session.user.id } },
       },
       include: {
         test: {
@@ -66,6 +73,11 @@ export async function GET(request: NextRequest) {
 // DELETE /api/results - Bulk delete test results
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { ids } = await request.json()
 
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
@@ -77,10 +89,11 @@ export async function DELETE(request: NextRequest) {
 
     console.log(`Deleting ${ids.length} test results...`)
 
-    // Delete test results
+    // Delete test results (only those belonging to user's tests)
     const result = await prisma.testResult.deleteMany({
       where: {
         id: { in: ids },
+        test: { environment: { userId: session.user.id } },
       },
     })
 

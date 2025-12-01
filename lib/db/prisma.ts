@@ -1,4 +1,4 @@
-import { PrismaClient } from '@/lib/generated/prisma'
+import { PrismaClient } from '@prisma/client'
 
 const prismaClientSingleton = () => {
   return new PrismaClient({
@@ -16,11 +16,4 @@ export default prisma
 
 if (process.env.NODE_ENV !== 'production') {
   globalThis.prismaGlobal = prisma
-}
-
-// Graceful shutdown
-if (process.env.NODE_ENV !== 'production') {
-  process.on('beforeExit', async () => {
-    await prisma.$disconnect()
-  })
 }

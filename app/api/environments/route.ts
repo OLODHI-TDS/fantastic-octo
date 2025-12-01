@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/db/prisma'
 import { CreateEnvironmentSchema } from '@/types/environment'
 import { encrypt, decrypt } from '@/lib/salesforce/oauth'
+import { auth } from '@/lib/auth'
 
-// GET /api/environments - List all environments
+// GET /api/environments - List all environments for the current user
 export async function GET() {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const environments = await prisma.environment.findMany({
+      where: { userId: session.user.id },
       include: {
         credentials: {
           select: {
@@ -51,11 +58,16 @@ export async function GET() {
 // POST /api/environments - Create new environment
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth()
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const body = await request.json()
     const validatedData = CreateEnvironmentSchema.parse(body)
 
     // Prepare data, encrypting sensitive OAuth fields
-    const createData: any = { ...validatedData }
+    const createData: any = { ...validatedData, userId: session.user.id }
     if (createData.sfConnectedAppClientSecret) {
       createData.sfConnectedAppClientSecret = encrypt(createData.sfConnectedAppClientSecret)
     }
