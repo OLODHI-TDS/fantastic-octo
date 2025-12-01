@@ -427,6 +427,52 @@ export function generateCreateOfficeUserData() {
   }
 }
 
+export function generateCreateBranchData() {
+  // Generate UK landline number (020 for London)
+  const telephoneNumber = `020${faker.string.numeric(8)}`
+  const faxNumber = `020${faker.string.numeric(8)}`
+
+  const branchData: any = {
+    branch: {
+      // Mandatory fields
+      branch_name: `${faker.location.city()} ${faker.helpers.arrayElement(['Central', 'North', 'South', 'East', 'West', 'Office', 'Branch'])}`,
+      branch_poan: faker.location.buildingNumber(),
+      branch_street: faker.location.street(),
+      branch_town: faker.location.city(),
+      branch_postcode: generateUKPostcode(),
+      branch_telephone: telephoneNumber,
+      branch_general_email: faker.internet.email({ provider: 'branch.com' }),
+    }
+  }
+
+  // Optional fields - add some randomly
+  if (faker.datatype.boolean()) {
+    branchData.branch.branch_administrative_area = faker.location.county()
+  }
+
+  if (faker.datatype.boolean()) {
+    branchData.branch.branch_mobile = `07${faker.string.numeric(9)}`
+  }
+
+  if (faker.datatype.boolean()) {
+    branchData.branch.branch_fax = faxNumber
+  }
+
+  if (faker.datatype.boolean()) {
+    branchData.branch.branch_dispute_email = faker.internet.email({ provider: 'branch.com' })
+  }
+
+  if (faker.datatype.boolean()) {
+    branchData.branch.branch_finance_email = faker.internet.email({ provider: 'branch.com' })
+  }
+
+  if (faker.datatype.boolean()) {
+    branchData.branch.branch_website = `https://www.${faker.internet.domainName()}/`
+  }
+
+  return branchData
+}
+
 /**
  * Generate test data based on endpoint ID
  */
@@ -453,6 +499,8 @@ export function generateTestDataForEndpoint(endpointId: string): any {
       return generateRegisterLandlordData()
     case 'create-office-user':
       return generateCreateOfficeUserData()
+    case 'create-branch':
+      return generateCreateBranchData()
     default:
       // For GET endpoints or endpoints without specific generators
       return null

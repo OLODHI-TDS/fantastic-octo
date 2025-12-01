@@ -61,6 +61,7 @@ import { transferBranchDepositScenarios } from '@/lib/test-scenarios/transfer-br
 import { allTenanciesScenarios } from '@/lib/test-scenarios/all-tenancies-scenarios'
 import { registerLandlordScenarios } from '@/lib/test-scenarios/register-landlord-scenarios'
 import { createOfficeUserScenarios } from '@/lib/test-scenarios/create-office-user-scenarios'
+import { createBranchScenarios } from '@/lib/test-scenarios/create-branch-scenarios'
 
 interface Environment {
   id: string
@@ -138,6 +139,8 @@ function getScenariosForEndpoint(endpointId: string): TestScenario[] {
       return registerLandlordScenarios
     case 'create-office-user':
       return createOfficeUserScenarios
+    case 'create-branch':
+      return createBranchScenarios
     default:
       // Fallback to basic scenarios for endpoints without specific test scenarios
       return [

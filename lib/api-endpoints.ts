@@ -224,6 +224,15 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     expectedStatus: 200,
   },
   {
+    id: 'create-branch',
+    name: 'Create New Branch',
+    description: 'Create a new branch with contact and address details',
+    endpoint: '/services/apexrest/createbranch',
+    method: 'POST',
+    category: 'Deposit Management',
+    expectedStatus: 200,
+  },
+  {
     id: 'add-to-cart',
     name: 'Add to Cart (NRLA)',
     description: 'Add a deposit to the NRLA cart',
