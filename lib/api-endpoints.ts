@@ -215,6 +215,15 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     pathParamPlaceholder: 'EWC00004420',
   },
   {
+    id: 'create-office-user',
+    name: 'Add New Office User',
+    description: 'Create a new office user with specified role and branch access',
+    endpoint: '/services/apexrest/createuser',
+    method: 'POST',
+    category: 'Deposit Management',
+    expectedStatus: 200,
+  },
+  {
     id: 'add-to-cart',
     name: 'Add to Cart (NRLA)',
     description: 'Add a deposit to the NRLA cart',

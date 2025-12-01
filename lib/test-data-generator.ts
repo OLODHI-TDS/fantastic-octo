@@ -397,6 +397,36 @@ export function generateRegisterLandlordData() {
   }
 }
 
+export function generateCreateOfficeUserData() {
+  // Generate 1-3 branch IDs
+  const numBranches = faker.number.int({ min: 1, max: 3 })
+  const branches: string[] = []
+  for (let i = 0; i < numBranches; i++) {
+    branches.push(`BR${faker.string.numeric(5)}${faker.string.alpha({ length: 1, casing: 'upper' })}`)
+  }
+
+  const jobRoles = [
+    'Account administrator',
+    'Dispute administrator',
+    'Finance administrator',
+    'Deposit, property & dispute administrator',
+    'Deposit & property administrator',
+    'View only access'
+  ]
+
+  return {
+    user: {
+      person_title: faker.helpers.arrayElement(['Mr', 'Mrs', 'Ms', 'Miss', 'Dr']),
+      person_firstname: faker.person.firstName(),
+      person_surname: faker.person.lastName(),
+      person_email: faker.internet.email(),
+      person_mobile: `07${faker.string.numeric(9)}`,
+      job_role: faker.helpers.arrayElement(jobRoles),
+      branches: branches.join(', ')
+    }
+  }
+}
+
 /**
  * Generate test data based on endpoint ID
  */
@@ -421,6 +451,8 @@ export function generateTestDataForEndpoint(endpointId: string): any {
       return generateRemoveTenantData()
     case 'register-landlord':
       return generateRegisterLandlordData()
+    case 'create-office-user':
+      return generateCreateOfficeUserData()
     default:
       // For GET endpoints or endpoints without specific generators
       return null

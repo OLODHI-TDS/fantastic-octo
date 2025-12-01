@@ -5,7 +5,8 @@
       "Bash(npx shadcn@latest add button card input label select dialog tabs toast table badge)",
       "Bash(npm install:*)",
       "Read(//c/Users/Omar.Lodhi/OneDrive - The Dispute Service/Projects/EWI Deposits APIs/As Is Documentation/**)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []
