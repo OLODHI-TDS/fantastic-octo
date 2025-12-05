@@ -92,13 +92,23 @@ export async function POST(
     let executionResult
 
     // Execute with fixed API key if endpoint requires it
-    if (usesFixedApiKey && endpointConfig?.fixedApiKeyHeader && endpointConfig?.fixedApiKeyValue) {
+    if (usesFixedApiKey && endpointConfig?.fixedApiKeyHeader) {
+      // Use environment's NRLA token if available, otherwise fall back to hardcoded value
+      const apiKeyValue = test.environment.nrlaAccessToken || endpointConfig.fixedApiKeyValue
+
+      if (!apiKeyValue) {
+        return NextResponse.json(
+          { error: 'NRLA Access Token not configured for this environment. Please add it in Environment settings.' },
+          { status: 400 }
+        )
+      }
+
       executionResult = await executeTest({
         test: testData,
         instanceUrl: test.environment.instanceUrl,
         fixedApiKey: {
           header: endpointConfig.fixedApiKeyHeader,
-          value: endpointConfig.fixedApiKeyValue,
+          value: apiKeyValue,
         },
       })
     } else {

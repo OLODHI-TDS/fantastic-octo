@@ -41,6 +41,9 @@ model Environment {
   sfRefreshToken             String?   // Encrypted refresh token for automatic token renewal
   sfTokenExpiresAt           DateTime? // When the current access token expires
 
+  // NRLA-specific authentication
+  nrlaAccessToken            String?   // Access token for NRLA endpoints (Register Landlord, etc.)
+
   // User ownership
   userId      String
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)

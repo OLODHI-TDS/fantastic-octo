@@ -43,6 +43,7 @@ interface Environment {
   sfConnectedAppClientSecret?: string
   sfRefreshToken?: string
   sfTokenExpiresAt?: string | Date | null
+  nrlaAccessToken?: string
 }
 
 interface EnvironmentDialogProps {
@@ -71,6 +72,7 @@ export function EnvironmentDialog({
     verificationBearerToken: '',
     sfConnectedAppClientId: '',
     sfConnectedAppClientSecret: '',
+    nrlaAccessToken: '',
   })
 
   // Reset form when dialog opens
@@ -93,6 +95,7 @@ export function EnvironmentDialog({
           verificationBearerToken: '',
           sfConnectedAppClientId: '',
           sfConnectedAppClientSecret: '',
+          nrlaAccessToken: '',
         })
         setOauthConfigOpen(false)
       }
@@ -240,6 +243,25 @@ export function EnvironmentDialog({
                 }
                 rows={3}
               />
+            </div>
+
+            {/* NRLA Configuration */}
+            <div className="border-t pt-4">
+              <div className="grid gap-2">
+                <Label htmlFor="nrlaAccessToken">NRLA Access Token (Optional)</Label>
+                <Input
+                  id="nrlaAccessToken"
+                  placeholder="England & Wales Insured-Insured-0-..."
+                  value={formData.nrlaAccessToken || ''}
+                  onChange={(e) =>
+                    setFormData({ ...formData, nrlaAccessToken: e.target.value })
+                  }
+                  className="font-mono text-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Access token for NRLA endpoints (Register Landlord). Format: &quot;Region Scheme-Scheme-DepositType-Key&quot;
+                </p>
+              </div>
             </div>
 
             {/* Verification Settings */}
