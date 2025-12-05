@@ -35,6 +35,7 @@ import {
   Plus,
   Trash2,
   Users,
+  ExternalLink,
 } from 'lucide-react'
 import { getEndpointById, ApiEndpoint } from '@/lib/api-endpoints'
 import { generateTestDataForEndpoint } from '@/lib/test-data-generator'
@@ -1383,6 +1384,29 @@ export default function EndpointDashboard() {
                         />
                       </div>
                     </div>
+
+                    {/* Payment Link Button - for payment-link endpoint */}
+                    {result.response?.data?.payment_link && (
+                      <div className="mt-4 p-4 border rounded-lg bg-green-50 border-green-200">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-semibold text-green-900">Payment Link Available</p>
+                            <p className="text-xs text-green-700 mt-1">
+                              Amount: {result.response.data.currency} {result.response.data.amount} •
+                              Reference: {result.response.data.payment_reference} •
+                              Expires: {new Date(result.response.data.expires_at).toLocaleString()}
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => window.open(result.response.data.payment_link, '_blank')}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Open Payment Link
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Verification Results */}
                     {(result.verificationResults || result.verificationError) && (
