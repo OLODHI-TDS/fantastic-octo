@@ -289,6 +289,15 @@ export const API_ENDPOINTS: ApiEndpoint[] = [
     category: 'Cart Management',
     expectedStatus: 200,
   },
+  {
+    id: 'payment-link',
+    name: 'Payment Link',
+    description: 'Get payment link for the current NRLA cart',
+    endpoint: '/services/apexrest/nrla/payment-link/cart',
+    method: 'GET',
+    category: 'Cart Management',
+    expectedStatus: 200,
+  },
 
   // NRLA Client Registration
   {
