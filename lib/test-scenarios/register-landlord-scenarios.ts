@@ -1,9 +1,13 @@
 /**
  * Test scenarios for Register Landlord (NRLA) endpoint
  * This endpoint registers a new landlord/client with NRLA membership details
+ *
+ * Required fields: person_title, person_firstname, person_lastname, person_email,
+ *                  person_mobile, person_street, person_city, person_postcode
+ * person_pr_sector should always be true
  */
 
-import { generateRegisterLandlordData, generateNRLAId } from '../test-data-generator'
+import { generateRegisterLandlordData } from '../test-data-generator'
 
 export interface TestScenario {
   id: string
@@ -20,7 +24,7 @@ export const registerLandlordScenarios: TestScenario[] = [
   {
     id: 'positive-register-landlord',
     name: 'Positive: Register New Landlord',
-    description: 'Register a new landlord with valid NRLA membership details',
+    description: 'Register a new landlord with valid details',
     type: 'positive',
     expectedStatus: 200,
     generatePayload: () => generateRegisterLandlordData(),
@@ -29,14 +33,27 @@ export const registerLandlordScenarios: TestScenario[] = [
   {
     id: 'positive-register-business-landlord',
     name: 'Positive: Register Business Landlord',
-    description: 'Register a landlord who is a business entity',
+    description: 'Register a landlord who is a business entity with all business fields',
     type: 'positive',
     expectedStatus: 200,
-    generatePayload: () => {
-      const data = generateRegisterLandlordData()
-      data.people.is_business = 'true'
-      return data
-    },
+    generatePayload: () => ({
+      people: [{
+        person_title: 'Mr',
+        person_firstname: 'John',
+        person_lastname: 'Smith',
+        person_email: 'john.smith@example.com',
+        person_mobile: '07700900123',
+        person_street: '123 High Street',
+        person_city: 'London',
+        person_postcode: 'SW1A 1AA',
+        person_pr_sector: true,
+        is_business: true,
+        business_name: 'Smith Properties Ltd',
+        tradename: 'Smith Lettings',
+        companyreg: '12345678',
+        business_phone: '02079876543',
+      }]
+    }),
   },
 
   {
@@ -45,23 +62,89 @@ export const registerLandlordScenarios: TestScenario[] = [
     description: 'Register a landlord who is an individual (not a business)',
     type: 'positive',
     expectedStatus: 200,
-    generatePayload: () => {
-      const data = generateRegisterLandlordData()
-      data.people.is_business = 'false'
-      return data
-    },
+    generatePayload: () => ({
+      people: [{
+        person_title: 'Mrs',
+        person_firstname: 'Jane',
+        person_lastname: 'Doe',
+        person_email: 'jane.doe@example.com',
+        person_mobile: '07700900456',
+        person_street: '456 Oak Lane',
+        person_city: 'Manchester',
+        person_postcode: 'M1 1AA',
+        person_pr_sector: true,
+      }]
+    }),
+  },
+
+  {
+    id: 'positive-all-optional-fields',
+    name: 'Positive: All Optional Fields',
+    description: 'Register landlord with all optional fields populated',
+    type: 'positive',
+    expectedStatus: 200,
+    generatePayload: () => ({
+      people: [{
+        person_title: 'Mr',
+        person_firstname: 'John',
+        person_lastname: 'Smith',
+        person_email: 'john.smith@example.com',
+        person_additional_email: 'john.alt@example.com',
+        person_mobile: '07700900123',
+        person_telephone: '02071234567',
+        person_street: '123 High Street',
+        person_city: 'London',
+        person_postcode: 'SW1A 1AA',
+        person_county: 'Greater London',
+        person_correspondence_street: '456 Business Park',
+        person_correspondence_city: 'Manchester',
+        person_correspondence_postcode: 'M1 1AA',
+        person_correspondence_county: 'Greater Manchester',
+        person_pr_sector: true,
+        is_business: true,
+        business_name: 'Smith Properties Ltd',
+        tradename: 'Smith Lettings',
+        companyreg: '12345678',
+        business_phone: '02079876543',
+      }]
+    }),
+  },
+
+  {
+    id: 'positive-with-correspondence-address',
+    name: 'Positive: With Correspondence Address',
+    description: 'Register landlord with separate correspondence address',
+    type: 'positive',
+    expectedStatus: 200,
+    generatePayload: () => ({
+      people: [{
+        person_title: 'Ms',
+        person_firstname: 'Sarah',
+        person_lastname: 'Johnson',
+        person_email: 'sarah.johnson@example.com',
+        person_mobile: '07700900789',
+        person_street: '789 Main Road',
+        person_city: 'Birmingham',
+        person_postcode: 'B1 1AA',
+        person_correspondence_street: '100 Office Street',
+        person_correspondence_city: 'Leeds',
+        person_correspondence_postcode: 'LS1 1AA',
+        person_correspondence_county: 'West Yorkshire',
+        person_pr_sector: true,
+      }]
+    }),
   },
 
   // NEGATIVE TESTS - Missing Required Fields
   {
-    id: 'negative-missing-nrla-id',
-    name: 'Negative: Missing NRLA ID',
-    description: 'Attempt to register landlord without nrla_id',
+    id: 'negative-missing-title',
+    name: 'Negative: Missing Title',
+    description: 'Attempt to register landlord without person_title',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => {
-      const data = generateRegisterLandlordData()
-      delete data.people.nrla_id
+      const data = generateRegisterLandlordData() as any
+      delete data.people[0].person_title
       return data
     },
   },
@@ -73,21 +156,21 @@ export const registerLandlordScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => {
-      const data = generateRegisterLandlordData()
-      delete data.people.person_firstname
+      const data = generateRegisterLandlordData() as any
+      delete data.people[0].person_firstname
       return data
     },
   },
 
   {
-    id: 'negative-missing-surname',
-    name: 'Negative: Missing Surname',
-    description: 'Attempt to register landlord without person_surname',
+    id: 'negative-missing-lastname',
+    name: 'Negative: Missing Last Name',
+    description: 'Attempt to register landlord without person_lastname',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => {
-      const data = generateRegisterLandlordData()
-      delete data.people.person_surname
+      const data = generateRegisterLandlordData() as any
+      delete data.people[0].person_lastname
       return data
     },
   },
@@ -99,8 +182,47 @@ export const registerLandlordScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => {
-      const data = generateRegisterLandlordData()
-      delete data.people.person_email
+      const data = generateRegisterLandlordData() as any
+      delete data.people[0].person_email
+      return data
+    },
+  },
+
+  {
+    id: 'negative-missing-mobile',
+    name: 'Negative: Missing Mobile',
+    description: 'Attempt to register landlord without person_mobile',
+    type: 'negative',
+    expectedStatus: 400,
+    generatePayload: () => {
+      const data = generateRegisterLandlordData() as any
+      delete data.people[0].person_mobile
+      return data
+    },
+  },
+
+  {
+    id: 'negative-missing-street',
+    name: 'Negative: Missing Street',
+    description: 'Attempt to register landlord without person_street',
+    type: 'negative',
+    expectedStatus: 400,
+    generatePayload: () => {
+      const data = generateRegisterLandlordData() as any
+      delete data.people[0].person_street
+      return data
+    },
+  },
+
+  {
+    id: 'negative-missing-city',
+    name: 'Negative: Missing City',
+    description: 'Attempt to register landlord without person_city',
+    type: 'negative',
+    expectedStatus: 400,
+    generatePayload: () => {
+      const data = generateRegisterLandlordData() as any
+      delete data.people[0].person_city
       return data
     },
   },
@@ -112,35 +234,132 @@ export const registerLandlordScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => {
-      const data = generateRegisterLandlordData()
-      delete data.people.person_postcode
+      const data = generateRegisterLandlordData() as any
+      delete data.people[0].person_postcode
       return data
     },
   },
 
   {
-    id: 'negative-missing-people-object',
-    name: 'Negative: Missing people Object',
-    description: 'Request body missing the people object entirely',
+    id: 'negative-missing-people-array',
+    name: 'Negative: Missing people Array',
+    description: 'Request body missing the people array entirely',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => ({}),
   },
 
-  // NEGATIVE TESTS - Invalid Data Formats
   {
-    id: 'negative-invalid-nrla-id-format',
-    name: 'Negative: Invalid NRLA ID Format',
-    description: 'Attempt to register with malformed NRLA ID (not RLA-XXXXX-XX format)',
+    id: 'negative-empty-people-array',
+    name: 'Negative: Empty people Array',
+    description: 'Request body with empty people array',
     type: 'negative',
     expectedStatus: 400,
-    generatePayload: () => {
-      const data = generateRegisterLandlordData()
-      data.people.nrla_id = 'INVALID-ID'
-      return data
-    },
+    generatePayload: () => ({ people: [] }),
   },
 
+  // NEGATIVE TESTS - Business Fields Missing When is_business=true
+  {
+    id: 'negative-business-missing-business-name',
+    name: 'Negative: Business Missing business_name',
+    description: 'Business landlord without required business_name field',
+    type: 'negative',
+    expectedStatus: 400,
+    generatePayload: () => ({
+      people: [{
+        person_title: 'Mr',
+        person_firstname: 'John',
+        person_lastname: 'Smith',
+        person_email: 'john@example.com',
+        person_mobile: '07700900123',
+        person_street: '123 High Street',
+        person_city: 'London',
+        person_postcode: 'SW1A 1AA',
+        person_pr_sector: true,
+        is_business: true,
+        tradename: 'Smith Lettings',
+        companyreg: '12345678',
+        business_phone: '02079876543',
+      }]
+    }),
+  },
+
+  {
+    id: 'negative-business-missing-tradename',
+    name: 'Negative: Business Missing tradename',
+    description: 'Business landlord without required tradename field',
+    type: 'negative',
+    expectedStatus: 400,
+    generatePayload: () => ({
+      people: [{
+        person_title: 'Mr',
+        person_firstname: 'John',
+        person_lastname: 'Smith',
+        person_email: 'john@example.com',
+        person_mobile: '07700900123',
+        person_street: '123 High Street',
+        person_city: 'London',
+        person_postcode: 'SW1A 1AA',
+        person_pr_sector: true,
+        is_business: true,
+        business_name: 'Smith Properties Ltd',
+        companyreg: '12345678',
+        business_phone: '02079876543',
+      }]
+    }),
+  },
+
+  {
+    id: 'negative-business-missing-companyreg',
+    name: 'Negative: Business Missing companyreg',
+    description: 'Business landlord without required companyreg field',
+    type: 'negative',
+    expectedStatus: 400,
+    generatePayload: () => ({
+      people: [{
+        person_title: 'Mr',
+        person_firstname: 'John',
+        person_lastname: 'Smith',
+        person_email: 'john@example.com',
+        person_mobile: '07700900123',
+        person_street: '123 High Street',
+        person_city: 'London',
+        person_postcode: 'SW1A 1AA',
+        person_pr_sector: true,
+        is_business: true,
+        business_name: 'Smith Properties Ltd',
+        tradename: 'Smith Lettings',
+        business_phone: '02079876543',
+      }]
+    }),
+  },
+
+  {
+    id: 'negative-business-missing-business-phone',
+    name: 'Negative: Business Missing business_phone',
+    description: 'Business landlord without required business_phone field',
+    type: 'negative',
+    expectedStatus: 400,
+    generatePayload: () => ({
+      people: [{
+        person_title: 'Mr',
+        person_firstname: 'John',
+        person_lastname: 'Smith',
+        person_email: 'john@example.com',
+        person_mobile: '07700900123',
+        person_street: '123 High Street',
+        person_city: 'London',
+        person_postcode: 'SW1A 1AA',
+        person_pr_sector: true,
+        is_business: true,
+        business_name: 'Smith Properties Ltd',
+        tradename: 'Smith Lettings',
+        companyreg: '12345678',
+      }]
+    }),
+  },
+
+  // NEGATIVE TESTS - Invalid Data Formats
   {
     id: 'negative-invalid-email-format',
     name: 'Negative: Invalid Email Format',
@@ -148,8 +367,21 @@ export const registerLandlordScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => {
-      const data = generateRegisterLandlordData()
-      data.people.person_email = 'invalid-email'
+      const data = generateRegisterLandlordData() as any
+      data.people[0].person_email = 'invalid-email'
+      return data
+    },
+  },
+
+  {
+    id: 'negative-invalid-additional-email-format',
+    name: 'Negative: Invalid Additional Email Format',
+    description: 'Attempt to register with invalid additional email format',
+    type: 'negative',
+    expectedStatus: 400,
+    generatePayload: () => {
+      const data = generateRegisterLandlordData() as any
+      data.people[0].person_additional_email = 'not-an-email'
       return data
     },
   },
@@ -161,63 +393,74 @@ export const registerLandlordScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => {
-      const data = generateRegisterLandlordData()
-      data.people.person_postcode = 'INVALID'
+      const data = generateRegisterLandlordData() as any
+      data.people[0].person_postcode = 'INVALID'
       return data
     },
   },
 
   {
-    id: 'negative-invalid-classification',
-    name: 'Negative: Invalid Classification',
-    description: 'Attempt to register with classification other than "Primary Landlord"',
+    id: 'negative-invalid-mobile-format',
+    name: 'Negative: Invalid Mobile Format',
+    description: 'Attempt to register landlord with invalid mobile number',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => {
-      const data = generateRegisterLandlordData()
-      data.people.person_classification = 'Tenant'
+      const data = generateRegisterLandlordData() as any
+      data.people[0].person_mobile = 'not-a-phone'
       return data
     },
   },
 
   {
-    id: 'negative-invalid-phone-format',
-    name: 'Negative: Invalid Phone Format',
-    description: 'Attempt to register landlord with invalid phone number',
+    id: 'negative-invalid-telephone-format',
+    name: 'Negative: Invalid Telephone Format',
+    description: 'Attempt to register landlord with invalid telephone number',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => {
-      const data = generateRegisterLandlordData()
-      data.people.person_phone = 'not-a-phone'
+      const data = generateRegisterLandlordData() as any
+      data.people[0].person_telephone = '12345'
       return data
     },
   },
 
-  // NEGATIVE TESTS - Duplicate/Existing Records
   {
-    id: 'negative-duplicate-nrla-id',
-    name: 'Negative: Duplicate NRLA ID',
-    description: 'Attempt to register a landlord with an NRLA ID that already exists',
+    id: 'negative-invalid-companyreg-format',
+    name: 'Negative: Invalid Company Registration',
+    description: 'Attempt to register with invalid company registration number',
     type: 'negative',
     expectedStatus: 400,
-    generatePayload: () => {
-      const data = generateRegisterLandlordData()
-      // Use a known existing NRLA ID - this will need to be populated with a real one during testing
-      data.people.nrla_id = 'RLA-00001-AA'
-      return data
-    },
+    generatePayload: () => ({
+      people: [{
+        person_title: 'Mr',
+        person_firstname: 'John',
+        person_lastname: 'Smith',
+        person_email: 'john@example.com',
+        person_mobile: '07700900123',
+        person_street: '123 High Street',
+        person_city: 'London',
+        person_postcode: 'SW1A 1AA',
+        person_pr_sector: true,
+        is_business: true,
+        business_name: 'Smith Properties Ltd',
+        tradename: 'Smith Lettings',
+        companyreg: 'ABC', // Should be 8 digits
+        business_phone: '02079876543',
+      }]
+    }),
   },
 
   // SECURITY TESTS
   {
-    id: 'negative-sql-injection-nrla-id',
-    name: 'Negative: SQL Injection in NRLA ID',
-    description: 'Security test - attempt SQL injection in nrla_id field',
+    id: 'negative-sql-injection-name',
+    name: 'Negative: SQL Injection in Name',
+    description: 'Security test - attempt SQL injection in name field',
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => {
-      const data = generateRegisterLandlordData()
-      data.people.nrla_id = "RLA' OR '1'='1"
+      const data = generateRegisterLandlordData() as any
+      data.people[0].person_firstname = "John' OR '1'='1"
       return data
     },
   },
@@ -229,8 +472,21 @@ export const registerLandlordScenarios: TestScenario[] = [
     type: 'negative',
     expectedStatus: 400,
     generatePayload: () => {
-      const data = generateRegisterLandlordData()
-      data.people.person_firstname = '<script>alert("xss")</script>'
+      const data = generateRegisterLandlordData() as any
+      data.people[0].person_firstname = '<script>alert("xss")</script>'
+      return data
+    },
+  },
+
+  {
+    id: 'negative-xss-attempt-email',
+    name: 'Negative: XSS Attempt in Email',
+    description: 'Security test - attempt XSS injection in email field',
+    type: 'negative',
+    expectedStatus: 400,
+    generatePayload: () => {
+      const data = generateRegisterLandlordData() as any
+      data.people[0].person_email = '<script>alert("xss")</script>@test.com'
       return data
     },
   },

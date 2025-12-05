@@ -370,30 +370,55 @@ export function generateNRLAId(): string {
 export function generateRegisterLandlordData() {
   const isBusiness = faker.datatype.boolean()
 
+  // Generate UK landline number (01 or 02 prefix)
+  const landlinePrefix = faker.helpers.arrayElement(['01', '02'])
+  const landlineNumber = `${landlinePrefix}${faker.string.numeric(9)}`
+
   const person: any = {
-    nrla_id: generateNRLAId(),
-    person_title: faker.person.prefix(),
+    // Required fields
+    person_title: faker.helpers.arrayElement(['Mr', 'Mrs', 'Ms', 'Miss', 'Dr']),
     person_firstname: faker.person.firstName(),
-    person_surname: faker.person.lastName(),
-    is_business: isBusiness.toString().toLowerCase(),
-    person_paon: faker.location.buildingNumber(),
-    person_street: faker.location.street(),
-    person_town: faker.location.city(),
-    person_postcode: generateUKPostcode(),
-    person_country: faker.helpers.arrayElement(['England', 'Wales', 'Scotland', 'Northern Ireland']),
-    person_phone: `07${faker.string.numeric(9)}`,
+    person_lastname: faker.person.lastName(),
     person_email: faker.internet.email(),
-    person_classification: 'Primary Landlord',
+    person_mobile: `07${faker.string.numeric(9)}`,
+    person_street: `${faker.location.buildingNumber()} ${faker.location.street()}`,
+    person_city: faker.location.city(),
+    person_postcode: generateUKPostcode(),
+    person_pr_sector: true, // Always true as per requirement
   }
 
-  // Add optional saon (secondary address - flat number etc)
-  const saon = faker.datatype.boolean() ? `Flat ${faker.number.int({ min: 1, max: 20 })}` : null
-  if (saon) {
-    person.person_saon = saon
+  // Optional fields - add some randomly
+  if (faker.datatype.boolean()) {
+    person.person_additional_email = faker.internet.email()
+  }
+
+  if (faker.datatype.boolean()) {
+    person.person_telephone = landlineNumber
+  }
+
+  if (faker.datatype.boolean()) {
+    person.person_county = faker.location.county()
+  }
+
+  // Correspondence address (all or none)
+  if (faker.datatype.boolean()) {
+    person.person_correspondence_street = `${faker.location.buildingNumber()} ${faker.location.street()}`
+    person.person_correspondence_city = faker.location.city()
+    person.person_correspondence_postcode = generateUKPostcode()
+    person.person_correspondence_county = faker.location.county()
+  }
+
+  // Business fields
+  if (isBusiness) {
+    person.is_business = true
+    person.business_name = faker.company.name()
+    person.tradename = `${faker.company.name()} Lettings`
+    person.companyreg = faker.string.numeric(8)
+    person.business_phone = landlineNumber
   }
 
   return {
-    people: person
+    people: [person]
   }
 }
 
