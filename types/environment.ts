@@ -17,6 +17,8 @@ export const EnvironmentSchema = z.object({
   sfConnectedAppClientSecret: z.string().nullable().optional(),
   sfRefreshToken: z.string().nullable().optional(),
   sfTokenExpiresAt: z.union([z.string(), z.date(), z.null()]).optional(),
+  // NRLA-specific authentication
+  nrlaAccessToken: z.string().nullable().optional(),
   createdAt: z.union([z.string(), z.date()]).optional(),
   updatedAt: z.union([z.string(), z.date()]).optional(),
 })
