@@ -54,3 +54,5 @@ prisma/*.db-journal
 .idea
 
 /lib/generated/prisma
+API Specifications/
+nul

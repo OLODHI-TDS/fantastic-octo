@@ -15,7 +15,7 @@ export interface TestResultData {
     id: string
     orgName: string
     authType: string
-  }
+  } | null
   status: 'passed' | 'failed' | 'error'
   manualStatus?: 'passed' | 'failed' | 'error' | null
   statusCode: number
@@ -86,11 +86,11 @@ export async function generateTestReportPDF(
           endpoint: result.test.endpoint,
           expectedStatus: result.test.expectedStatus || 200,
         },
-        credential: {
+        credential: result.credential ? {
           id: result.credential.id,
           orgName: result.credential.orgName,
           authType: result.credential.authType,
-        },
+        } : null,
         status: result.status,
         manualStatus: result.manualStatus || null,
         statusCode: result.statusCode,
@@ -197,7 +197,7 @@ export async function generateTestReportPDF(
 
           // Test metadata
           doc.fontSize(9).fillColor('#64748b')
-          doc.text(`Credential: ${test.credential.orgName} (${test.credential.authType})`)
+          doc.text(`Credential: ${test.credential ? `${test.credential.orgName} (${test.credential.authType})` : 'Fixed API Key'}`)
           doc.text(`Endpoint: ${test.test.method} ${test.test.endpoint}`)
           doc.text(`Status Code: ${test.statusCode} (Expected: ${test.test.expectedStatus})`)
           doc.text(`Response Time: ${test.responseTime}ms`)
