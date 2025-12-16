@@ -822,17 +822,19 @@ export default function ResultsPage() {
                         />
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(getEffectiveStatus(result))}
-                          {getStatusBadge(getEffectiveStatus(result))}
-                          {result.manualStatus && (
-                            <span className="text-xs text-muted-foreground">
-                              (was {result.status})
-                            </span>
-                          )}
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(getEffectiveStatus(result))}
+                            {getStatusBadge(getEffectiveStatus(result))}
+                            {result.manualStatus && (
+                              <span className="text-xs text-muted-foreground">
+                                (was {result.status})
+                              </span>
+                            )}
+                          </div>
                           {result.verificationResults && (
                             <div
-                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium w-fit ${
                                 result.verificationPassed
                                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                                   : 'bg-red-50 text-red-700 border border-red-200'
