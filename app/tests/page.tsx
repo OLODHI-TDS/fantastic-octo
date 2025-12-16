@@ -17,7 +17,7 @@ export default function TestsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
 
   // NRLA endpoints
-  const nrlaEndpointIds = ['delete-deposit', 'add-to-cart', 'remove-from-cart', 'list-cart-contents', 'add-additional-tenant', 'remove-tenant']
+  const nrlaEndpointIds = ['delete-deposit', 'add-to-cart', 'remove-from-cart', 'list-cart-contents', 'add-additional-tenant', 'remove-tenant', 'payment-link', 'register-landlord']
 
   // Filter and separate endpoints
   const allEndpoints = API_ENDPOINTS.filter(endpoint => {
